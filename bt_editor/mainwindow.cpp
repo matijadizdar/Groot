@@ -240,6 +240,20 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+void MainWindow::loadFromPlugin(const QString& plugin_path)
+{
+    BT::BehaviorTreeFactory factory;
+    factory.registerFromPlugin(plugin_path.toStdString());
+
+    const auto& manifests = factory.manifests();
+    for(const auto& entry : manifests)
+    {
+        NodeModel model;
+        model = entry.second;
+        onAddToModelRegistry(model);
+    }
+}
+
 void MainWindow::loadFromXML(const QString& xml_text)
 {
     QDomDocument document;
@@ -375,7 +389,7 @@ void MainWindow::on_actionLoad_triggered()
 
     QString fileName = QFileDialog::getOpenFileName(this,
                                                     tr("Load BehaviorTree from file"), directory_path,
-                                                    tr("BehaviorTree files (*.xml)"));
+                                                    tr("BehaviorTree files (*.xml);; BehaviorTree.CPP Plugins (*.so)"));
     if (!QFileInfo::exists(fileName)){
         return;
     }
@@ -390,14 +404,21 @@ void MainWindow::on_actionLoad_triggered()
     settings.setValue("MainWindow.lastLoadDirectory", directory_path);
     settings.sync();
 
-    QString xml_text;
+    if(QFileInfo(fileName).suffix() == "xml")
+    {
+        QString xml_text;
 
-    QTextStream in(&file);
-    while (!in.atEnd()) {
-        xml_text += in.readLine();
+        QTextStream in(&file);
+        while (!in.atEnd()) {
+            xml_text += in.readLine();
+        }
+
+        loadFromXML(xml_text);
     }
-
-    loadFromXML(xml_text);
+    else
+    {
+        loadFromPlugin(fileName);
+    }
 }
 
 QString MainWindow::saveToXML() const

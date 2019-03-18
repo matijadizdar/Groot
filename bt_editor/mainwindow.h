@@ -46,6 +46,7 @@ public:
     ~MainWindow() override;
 
     void loadFromXML(const QString &xml_text);
+    void loadFromPlugin(const QString &plugin_path);
 
     QString saveToXML() const ;
 
