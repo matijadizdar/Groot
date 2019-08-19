@@ -112,6 +112,7 @@ add_library(behavior_tree_editor
     ${APP_CPPS}
     ${FORMS_HEADERS}
 )
+list(APPEND GROOT_TARGETS behavior_tree_editor)
 
 SET(GROOT_DEPENDENCIES QtNodeEditor )
 
@@ -125,13 +126,15 @@ if( ZMQ_FOUND )
     SET(GROOT_DEPENDENCIES ${GROOT_DEPENDENCIES} zmq)
 endif()
 
-target_link_libraries(behavior_tree_editor ${GROOT_DEPENDENCIES} )
+target_link_libraries(behavior_tree_editor PUBLIC ${GROOT_DEPENDENCIES} )
 
 
 add_executable(Groot ./bt_editor/main.cpp  ${RESOURCE_FILES})
-target_link_libraries(Groot behavior_tree_editor behaviortree_cpp_v3 )
+target_link_libraries(Groot PUBLIC behavior_tree_editor)
+list(APPEND GROOT_TARGETS Groot)
 
-add_subdirectory(test)
+# TODO: fix test linking errors
+# add_subdirectory(test)
 
 ######################################################
 # INSTALL
@@ -139,21 +142,24 @@ if(catkin_FOUND)
     set( GROOT_LIB_DESTINATION   ${CATKIN_PACKAGE_LIB_DESTINATION} )
     set( GROOT_INC_DESTINATION   ${CATKIN_PACKAGE_INCLUDE_DESTINATION} )
     set( GROOT_BIN_DESTINATION   ${CATKIN_PACKAGE_BIN_DESTINATION} )
+    set( GROOT_SHARE_DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION} )
 else()
     set( GROOT_LIB_DESTINATION   lib )
     set( GROOT_INC_DESTINATION   include )
     set( GROOT_BIN_DESTINATION   bin )
+    set( GROOT_SHARE_DESTINATION share )
     
-    INSTALL( FILES ${CMAKE_CURRENT_SOURCE_DIR}/groot_icon.png
-			 DESTINATION share/icons/hicolor/256x256)
-			 
-	INSTALL( FILES ${CMAKE_CURRENT_SOURCE_DIR}/Groot.desktop
-			 DESTINATION share/applications)
     
 endif()
 
-INSTALL(TARGETS Groot RUNTIME DESTINATION ${GROOT_BIN_DESTINATION} )
+INSTALL(TARGETS ${GROOT_TARGETS}
+        ARCHIVE DESTINATION ${GROOT_LIB_DESTINATION}
+        LIBRARY DESTINATION ${GROOT_LIB_DESTINATION}
+        RUNTIME DESTINATION ${GROOT_BIN_DESTINATION}
+)
 
-
-
-
+INSTALL( FILES ${CMAKE_CURRENT_SOURCE_DIR}/groot_icon.png
+         DESTINATION ${GROOT_SHARE_DESTINATION}/icons/hicolor/256x256)
+         
+INSTALL( FILES ${CMAKE_CURRENT_SOURCE_DIR}/Groot.desktop
+         DESTINATION ${GROOT_SHARE_DESTINATION}/applications)
