@@ -142,6 +142,9 @@ MainWindow::MainWindow(GraphicMode initial_mode, QWidget *parent) :
         this->createTab(ID);
     });
 
+    connect( _editor_widget, &SidepanelEditor::loadBehaviorTree,
+            this, &MainWindow::onCreateAbsBehaviorTree );
+
     connect( _editor_widget, &SidepanelEditor::renameSubtree,
              this, [this](QString prev_ID, QString new_ID)
     {

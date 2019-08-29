@@ -317,40 +317,26 @@ void SidepanelEditor::on_buttonDownload_clicked()
     settings.sync();
 
     //--------------------------------
-    NodeModels imported_models;
     if( fileInfo.suffix() == "xml" )
     {
         QFile file(fileName);
-        imported_models = importFromXML( &file );
+        importFromXML( &file );
     }
     else if( fileInfo.completeSuffix() == "skills.json" )
     {
-        imported_models = importFromSkills( fileName );
-    }
-
-    if( imported_models.empty() )
-    {
-        return;
-    }
-
-    CleanPreviousModels(this, _tree_nodes_model, imported_models );
-
-    for(auto& it: imported_models)
-    {
-        addNewModel( it.second );
+        importFromSkills( fileName );
     }
 }
 
-NodeModels SidepanelEditor::importFromXML(QFile* file)
+void SidepanelEditor::importFromXML(QFile* file)
 {
     QDomDocument doc;
-
 
     if (!file->open(QIODevice::ReadOnly))
     {
         QMessageBox::warning(this,"Error loading TreeNodeModel form file",
                              "The XML was not correctly loaded");
-        return {};
+        return;
     }
 
     QString errorMsg;
@@ -360,7 +346,7 @@ NodeModels SidepanelEditor::importFromXML(QFile* file)
         auto error = tr("Error parsing XML (line %1): %2").arg(errorLine).arg(errorMsg);
         QMessageBox::warning(this,"Error loading TreeNodeModel form file", error);
         file->close();
-        return {};
+        return;
     }
     file->close();
 
@@ -371,7 +357,7 @@ NodeModels SidepanelEditor::importFromXML(QFile* file)
     {
         QMessageBox::warning(this,"Error loading TreeNodeModel form file",
                              "The XML must have a root node called <root>");
-        return custom_models;
+        return;
     }
 
     auto manifest_root = xml_root.firstChildElement("TreeNodesModel");
@@ -380,7 +366,7 @@ NodeModels SidepanelEditor::importFromXML(QFile* file)
     {
         QMessageBox::warning(this,"Error loading TreeNodeModel form file",
                              "Expecting <TreeNodesModel> under <root>");
-        return custom_models;
+        return;
     }
 
     for( QDomElement model_element = manifest_root.firstChildElement();
@@ -391,11 +377,42 @@ NodeModels SidepanelEditor::importFromXML(QFile* file)
         custom_models.insert( { model.registration_ID, model } );
     }
 
-    return custom_models;
+    if( custom_models.empty() )
+    {
+        return;
+    }
+
+    // Load new models
+    CleanPreviousModels(this, _tree_nodes_model, custom_models );
+
+    for(auto& it: custom_models)
+    {
+        addNewModel( it.second );
+    }
+
+    // Load subtrees definitions too
+    for( QDomElement tree_element = xml_root.firstChildElement("BehaviorTree");
+         !tree_element.isNull();
+         tree_element = tree_element.nextSiblingElement("BehaviorTree") )
+    {
+        AbsBehaviorTree tree = BuildTreeFromXML(tree_element, _tree_nodes_model);
+
+        // Ignore subtrees with no ID (they are usually the root)
+        if(!tree_element.hasAttribute("ID")) { continue; }
+
+        QString tree_name = tree_element.attribute("ID");
+
+        // Ignore subtrees that are not defined in the TreeNodesModel
+        if(_tree_nodes_model.find(tree_name) == _tree_nodes_model.end()) { continue; }
+
+        emit loadBehaviorTree(tree, tree_name);
+    }
 }
 
-NodeModels SidepanelEditor::importFromSkills(const QString &fileName)
+void SidepanelEditor::importFromSkills(const QString &fileName)
 {
+    // TODO VER_3
+    /*
     NodeModels custom_models;
 
     QFile loadFile(fileName);
@@ -407,7 +424,6 @@ NodeModels SidepanelEditor::importFromSkills(const QString &fileName)
         return custom_models;
     }
 
-    // TODO VER_3
 //     QJsonDocument loadDoc =  QJsonDocument::fromJson( loadFile.readAll() ) ;
 
 //     QJsonArray root_array = loadDoc.array();
@@ -433,6 +449,7 @@ NodeModels SidepanelEditor::importFromSkills(const QString &fileName)
 //     }
 
     return custom_models;
+    */
 }
 
 

@@ -61,15 +61,16 @@ signals:
 
     void destroySubtree(QString ID);
 
+    void loadBehaviorTree(const AbsBehaviorTree& tree, const QString& name);
+
 private:
     Ui::SidepanelEditor *ui;
     NodeModels &_tree_nodes_model;
     QtNodes::DataModelRegistry* _model_registry;
     std::map<QString, QTreeWidgetItem*> _tree_view_category_items;
 
-    NodeModels importFromXML(QFile *file);
-
-    NodeModels importFromSkills(const QString& filename);
+    void importFromXML(QFile *file);
+    void importFromSkills(const QString& filename);
 
 };
 
