@@ -1,6 +1,7 @@
 #include "sidepanel_editor.h"
 #include "ui_sidepanel_editor.h"
 #include "custom_node_dialog.h"
+#include "mainwindow.h"
 #include "utils.h"
 
 #include <QHeaderView>
@@ -240,11 +241,14 @@ void SidepanelEditor::on_buttonUpload_clicked()
 
     QDomElement root_models = doc.createElement("TreeNodesModel");
 
+    auto main_window = qobject_cast<MainWindow*>(nativeParentWidget());
+
     for(const auto& tree_it: _tree_nodes_model)
     {
         const auto& ID    = tree_it.first;
         const auto& model = tree_it.second;
 
+        // Skip built-in models
         if( BuiltinNodeModels().count(ID) != 0 )
         {
             continue;
@@ -261,7 +265,39 @@ void SidepanelEditor::on_buttonUpload_clicked()
             }
         }
         root_models.appendChild(node);
+
+        // Add subtrees definition
+        if(model.type == NodeType::SUBTREE)
+        {
+            static const char* COMMENT_SEPARATOR = " ////////// ";
+
+            const GraphicContainer* container = main_window->getTabByName(ID);
+
+            if(!container) { continue; }
+            const auto scene = container->scene();
+
+            auto abs_tree = BuildTreeFromScene(container->scene());
+            auto abs_root = abs_tree.rootNode();
+
+            if( abs_root->children_index.size() == 1 &&
+                abs_root->model.registration_ID == "Root"  )
+            {
+                // move to the child of ROOT
+                abs_root = abs_tree.node( abs_root->children_index.front() );
+            }
+
+            QtNodes::Node* root_node = abs_root->graphic_node;
+
+            root.appendChild( doc.createComment(COMMENT_SEPARATOR) );
+            QDomElement root_element = doc.createElement("BehaviorTree");
+
+            root_element.setAttribute("ID", ID.toStdString().c_str());
+            root.appendChild(root_element);
+
+            RecursivelyCreateXml(*scene, doc, root_element, root_node );
+        }
     }
+
     root.appendChild(root_models);
 
     //-------------------------------------
