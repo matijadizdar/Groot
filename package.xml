@@ -1,29 +1,47 @@
 <?xml version="1.0"?>
-<package>
-  <name>groot</name>
-  <version>1.0.0</version>
-  <description>Graphical editor to create behaviour trees</description>
+<package format="2">
+    <name>groot</name>
+    <version>1.0.0</version>
+    <description>Graphical editor to create behaviour trees</description>
 
-  <maintainer email="davide.faconti@gmail.com">Davide Faconti</maintainer>
+    <maintainer email="davide.faconti@gmail.com">Davide Faconti</maintainer>
 
-
-  <!-- One license tag required, multiple allowed, one license per tag -->
-  <license>MIT</license>
+    <license>MIT</license>
 
     <buildtool_depend>catkin</buildtool_depend>
-    <build_depend>cmake_modules</build_depend>
 
+    <build_depend>cmake_modules</build_depend>
     <build_depend>pluginlib</build_depend>
     <build_depend>roscpp</build_depend>
     <build_depend>behaviortree_cpp_v3</build_depend>
+    <build_depend>qtbase5-dev</build_depend>
+    <build_depend>libqt5-opengl-dev</build_depend>
+    <build_depend>libqt5-svg-dev</build_depend>
+    <build_depend>libzmq3-dev</build_depend>
+    <build_depend>rosbag</build_depend>
+    <build_depend>rosbag_storage</build_depend>
 
-    <run_depend>pluginlib</run_depend>
-    <run_depend>roscpp</run_depend>
-    <run_depend>behaviortree_cpp_v3</run_depend>
+    <build_export_depend>cmake_modules</build_export_depend>
+    <build_export_depend>pluginlib</build_export_depend>
+    <build_export_depend>roscpp</build_export_depend>
+    <build_export_depend>behaviortree_cpp_v3</build_export_depend>
+    <build_export_depend>qtbase5-dev</build_export_depend>
+    <build_export_depend>libqt5-opengl-dev</build_export_depend>
+    <build_export_depend>libqt5-svg-dev</build_export_depend>
+    <build_export_depend>libzmq3-dev</build_export_depend>
+    <build_export_depend>rosbag</build_export_depend>
+    <build_export_depend>rosbag_storage</build_export_depend>
 
-  <!-- The export tag contains other, unspecified, tags -->
-  <export>
-    <!-- Other tools can request additional information be placed here -->
+    <exec_depend>pluginlib</exec_depend>
+    <exec_depend>roscpp</exec_depend>
+    <exec_depend>behaviortree_cpp_v3</exec_depend>
+    <exec_depend>qtbase5-dev</exec_depend>
+    <exec_depend>libqt5-opengl</exec_depend>
+    <exec_depend>libqt5-svg-dev</exec_depend>
+    <exec_depend>libzmq3-dev</exec_depend>
+    <exec_depend>rosbag</exec_depend>
+    <exec_depend>rosbag_storage</exec_depend>
 
-  </export>
+    <export>
+    </export>
 </package>
