@@ -4,6 +4,11 @@
 #include "mainwindow.h"
 #include "utils.h"
 
+#include <ros/ros.h>
+#include <ros/package.h>
+#include <boost/filesystem.hpp>
+#include <tinyxml2.h>
+
 #include <QHeaderView>
 #include <QPushButton>
 #include <QSettings>
@@ -209,6 +214,79 @@ void SidepanelEditor::onContextMenu(const QPoint& pos)
     {
         emit modelRemoveRequested(selected_name);
     } );
+
+#ifdef USING_ROS
+    QMenu* palette_submenu = menu.addMenu("Load ROS palette");
+    
+    using namespace tinyxml2;
+    std::vector<std::pair<std::string, std::string>> exported_templates;
+    ros::package::getPlugins("groot", "palette", exported_templates);
+    XMLDocument template_description;
+
+    for (const auto& templt : exported_templates)
+    {
+        //ROS_INFO("Plugin: %s", templt.second.c_str());
+        try
+        {
+            template_description.LoadFile(templt.second.c_str());
+
+            if(template_description.Error())
+            {
+                throw std::runtime_error { std::string { "XML file may be ill-formed ( " }
+                                + template_description.GetErrorStr1() + ". "
+                            + template_description.GetErrorStr2() + ")" };
+            }
+
+            XMLElement* root_entry = template_description.RootElement();
+            if (!root_entry)
+                throw std::runtime_error { "No root element was found in XML file" };
+
+            XMLElement* template_entry = root_entry->FirstChildElement("template");
+
+            while(template_entry)
+            {
+                std::string template_lib = template_entry->Attribute("path");
+                if (template_lib.empty())
+                {
+                    ROS_ERROR("Empty path attribute in template/palette for Groot");
+                    template_entry = template_entry->NextSiblingElement("template");
+                    continue;
+                    //throw std::runtime_error { "Missing path attribute in template element" };
+                }
+                template_entry = template_entry->NextSiblingElement("template");
+
+                const std::string& xml_path = templt.second;
+
+                std::string package_path = xml_path.substr(0, xml_path.find("template"));
+                std::string lib_full_path = package_path + template_lib;
+                
+                QString fileName = QString::fromStdString(template_lib);
+                QString filePath = QString::fromStdString(lib_full_path);
+                QFile file(filePath);
+                if (!file.exists())
+                {
+                    ROS_WARN("File %s in template_description doesn't exists", template_lib.c_str());
+                    continue;
+                }
+
+                auto action = new QAction(fileName, palette_submenu);
+                palette_submenu->addAction(action);
+
+                connect( action, &QAction::triggered, this, [this, filePath]
+                {
+                    QFile file(filePath);
+                    importFromXML( &file );
+                });
+            }
+        }
+        catch(const std::runtime_error& ex)
+        {
+            ROS_ERROR("Error loading template %s in path %s: %s.", templt.first.c_str(),
+				templt.second.c_str(), ex.what());
+        }
+        
+    }
+#endif
 
     QPoint globalPos = ui->paletteTreeWidget->mapToGlobal(pos);
     menu.exec(globalPos);

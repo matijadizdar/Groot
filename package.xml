@@ -43,5 +43,6 @@
     <exec_depend>rosbag_storage</exec_depend>
 
     <export>
+        <groot palette="${prefix}/template_description.xml" />
     </export>
 </package>

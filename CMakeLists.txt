@@ -9,11 +9,13 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}  "${CMAKE_CURRENT_LIST_DIR}/cmake")
 # http://answers.ros.org/question/230877/optionally-build-a-package-with-catkin/
 if( CATKIN_DEVEL_PREFIX OR CATKIN_BUILD_BINARY_PACKAGE)
    set(catkin_FOUND 1)
-  # add_definitions( -DUSING_ROS )
+   add_definitions( -DUSING_ROS )
 endif()
 
 if(catkin_FOUND)
   find_package(catkin REQUIRED COMPONENTS behaviortree_cpp_v3 rosbag rosbag_storage roscpp)
+  find_package(cmake_modules REQUIRED)
+  find_package(TinyXML2 REQUIRED)
 
   message(STATUS "------------------------------------------------")
   message(STATUS "BehaviourTreeEditor is being built using CATKIN.")
@@ -23,7 +25,7 @@ if(catkin_FOUND)
     INCLUDE_DIRS 
     LIBRARIES qt_node_editor
     CATKIN_DEPENDS behaviortree_cpp_v3
-    DEPENDS 
+    DEPENDS TinyXML2
     )
 endif(catkin_FOUND)
 #############################################################
@@ -40,7 +42,7 @@ set(CMAKE_CXX_FLAGS "${Qt5Widgets_EXECUTABLE_COMPILE_FLAGS} -Werror=return-type"
 #set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
 #set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_STATIC_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
 
-INCLUDE_DIRECTORIES( ${catkin_INCLUDE_DIRS} ./QtNodeEditor/include ./  )
+INCLUDE_DIRECTORIES( ${catkin_INCLUDE_DIRS} ${TinyXML2_INCLUDE_DIRS} ./QtNodeEditor/include ./  )
 
 add_subdirectory( QtNodeEditor )
 
@@ -117,7 +119,7 @@ list(APPEND GROOT_TARGETS behavior_tree_editor)
 SET(GROOT_DEPENDENCIES QtNodeEditor )
 
 if( catkin_FOUND )
-    SET(GROOT_DEPENDENCIES ${GROOT_DEPENDENCIES} ${catkin_LIBRARIES} )
+    SET(GROOT_DEPENDENCIES ${GROOT_DEPENDENCIES} ${catkin_LIBRARIES} ${TinyXML2_LIBRARIES})
 else()
     SET(GROOT_DEPENDENCIES ${GROOT_DEPENDENCIES} behaviortree_cpp_v3 )
 endif()
