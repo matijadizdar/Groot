@@ -231,9 +231,7 @@ void SidepanelEditor::onContextMenu(const QPoint& pos)
 
             if(template_description.Error())
             {
-                throw std::runtime_error { std::string { "XML file may be ill-formed ( " }
-                                + template_description.GetErrorStr1() + ". "
-                            + template_description.GetErrorStr2() + ")" };
+                throw std::runtime_error { std::string { template_description.ErrorName() } + ": " + std::string { template_description.GetErrorStr1() } };
             }
 
             XMLElement* root_entry = template_description.RootElement();
@@ -280,7 +278,7 @@ void SidepanelEditor::onContextMenu(const QPoint& pos)
         }
         catch(const std::runtime_error& ex)
         {
-            ROS_ERROR("Error loading template %s in path %s: %s.", templt.first.c_str(),
+            ROS_ERROR("Error loading palette %s in path %s: %s.", templt.first.c_str(),
 				templt.second.c_str(), ex.what());
         }
         
