@@ -220,12 +220,11 @@ void SidepanelEditor::onContextMenu(const QPoint& pos)
     
     using namespace tinyxml2;
     std::vector<std::pair<std::string, std::string>> exported_templates;
-    ros::package::getPlugins("groot", "palette", exported_templates);
+    ros::package::getPlugins("behavior_tree_ros", "palette", exported_templates);
     XMLDocument template_description;
 
     for (const auto& templt : exported_templates)
     {
-        //ROS_INFO("Plugin: %s", templt.second.c_str());
         try
         {
             template_description.LoadFile(templt.second.c_str());
@@ -241,7 +240,7 @@ void SidepanelEditor::onContextMenu(const QPoint& pos)
             if (!root_entry)
                 throw std::runtime_error { "No root element was found in XML file" };
 
-            XMLElement* template_entry = root_entry->FirstChildElement("template");
+            XMLElement* template_entry = root_entry->FirstChildElement("palette");
 
             while(template_entry)
             {
@@ -249,23 +248,23 @@ void SidepanelEditor::onContextMenu(const QPoint& pos)
                 if (template_lib.empty())
                 {
                     ROS_ERROR("Empty path attribute in template/palette for Groot");
-                    template_entry = template_entry->NextSiblingElement("template");
+                    template_entry = template_entry->NextSiblingElement("palette");
                     continue;
                     //throw std::runtime_error { "Missing path attribute in template element" };
                 }
-                template_entry = template_entry->NextSiblingElement("template");
+                template_entry = template_entry->NextSiblingElement("palette");
 
                 const std::string& xml_path = templt.second;
 
-                std::string package_path = xml_path.substr(0, xml_path.find("template"));
+                std::string package_path = xml_path.substr(0, xml_path.find("palette"));
                 std::string lib_full_path = package_path + template_lib;
-                
+
                 QString fileName = QString::fromStdString(template_lib);
                 QString filePath = QString::fromStdString(lib_full_path);
                 QFile file(filePath);
                 if (!file.exists())
                 {
-                    ROS_WARN("File %s in template_description doesn't exists", template_lib.c_str());
+                    ROS_WARN("File %s doesn't exists", lib_full_path.c_str());
                     continue;
                 }
 
@@ -285,6 +284,11 @@ void SidepanelEditor::onContextMenu(const QPoint& pos)
 				templt.second.c_str(), ex.what());
         }
         
+    }
+
+    if (palette_submenu->isEmpty())
+    {
+        palette_submenu->setEnabled(false);
     }
 #endif
 

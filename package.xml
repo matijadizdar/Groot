@@ -41,8 +41,9 @@
     <exec_depend>libzmq3-dev</exec_depend>
     <exec_depend>rosbag</exec_depend>
     <exec_depend>rosbag_storage</exec_depend>
+    <exec_depend>behavior_tree_ros</exec_depend>
 
     <export>
-        <groot palette="${prefix}/template_description.xml" />
+        <behavior_tree_ros palette="${prefix}/palette_description.xml" />
     </export>
 </package>

@@ -1,0 +1,8 @@
+<description>
+    <palette name="groot"
+	    path="templates/my_template.xml"
+	    description="Template test" />
+	<palette name="groot"
+		path="templates/other_templates.xml"
+		description="Other template test" />
+</description>
