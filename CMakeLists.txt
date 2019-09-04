@@ -95,6 +95,13 @@ set(FORMS_UI
   ./bt_editor/custom_node_dialog.ui
   )
 
+if(catkin_FOUND)
+    list(APPEND FORMS_UI ./bt_editor/ros_dialog.ui)
+    list(APPEND APP_CPPS ./bt_editor/ros_dialog.cpp
+                         ./bt_editor/ros_utils.cpp
+    )
+endif()
+
 find_package(ZMQ)
 
 if( ZMQ_FOUND )

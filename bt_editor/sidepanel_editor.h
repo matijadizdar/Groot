@@ -47,6 +47,10 @@ private slots:
 
     void on_buttonLock_toggled(bool checked);
 
+#ifdef USING_ROS
+    void on_buttonROS_clicked();
+#endif
+
 signals:
 
     void addNewModel(const NodeModel &new_model);
@@ -64,13 +68,15 @@ signals:
     void loadBehaviorTree(const AbsBehaviorTree& tree, const QString& name);
 
 private:
+    void importFromPlugin(const QString& plugin_path);
+    void importFromXML(QFile *file);
+    void importFromSkills(const QString& filename);
+
+private:
     Ui::SidepanelEditor *ui;
     NodeModels &_tree_nodes_model;
     QtNodes::DataModelRegistry* _model_registry;
     std::map<QString, QTreeWidgetItem*> _tree_view_category_items;
-
-    void importFromXML(QFile *file);
-    void importFromSkills(const QString& filename);
 
 };
 

@@ -4,10 +4,9 @@
 #include "mainwindow.h"
 #include "utils.h"
 
-#include <ros/ros.h>
-#include <ros/package.h>
-#include <boost/filesystem.hpp>
-#include <tinyxml2.h>
+#ifdef USING_ROS
+#include "ros_dialog.h"
+#endif
 
 #include <QHeaderView>
 #include <QPushButton>
@@ -179,6 +178,34 @@ void SidepanelEditor::onRemoveModel(QString selected_name)
     }
 }
 
+#ifdef USING_ROS
+void SidepanelEditor::on_buttonROS_clicked()
+{
+    ROSDialog ros_dialog(this);
+
+    if(ros_dialog.exec() == QDialog::Accepted)
+    {
+        const ROSDialog::ResourceType resource_type = ros_dialog.getSelectedResource();
+        const QStringList& selected_plugins = ros_dialog.getSelectedPlugins();
+
+        if(resource_type == ROSDialog::ResourceType::Palettes)
+        {
+            for(const auto& plugin : selected_plugins)
+            {
+                QFile file(plugin);
+                importFromXML( &file );
+            }
+        }
+        else if(resource_type == ROSDialog::ResourceType::Plugins)
+        {
+            for(const auto& plugin : selected_plugins)
+            {
+                importFromPlugin( plugin );
+            }
+        }
+    }
+}
+#endif
 
 
 void SidepanelEditor::onContextMenu(const QPoint& pos)
@@ -214,81 +241,6 @@ void SidepanelEditor::onContextMenu(const QPoint& pos)
     {
         emit modelRemoveRequested(selected_name);
     } );
-
-#ifdef USING_ROS
-    QMenu* palette_submenu = menu.addMenu("Load ROS palette");
-    
-    using namespace tinyxml2;
-    std::vector<std::pair<std::string, std::string>> exported_templates;
-    ros::package::getPlugins("behavior_tree_ros", "palette", exported_templates);
-    XMLDocument template_description;
-
-    for (const auto& templt : exported_templates)
-    {
-        try
-        {
-            template_description.LoadFile(templt.second.c_str());
-
-            if(template_description.Error())
-            {
-                throw std::runtime_error { std::string { template_description.ErrorName() } + ": " + std::string { template_description.GetErrorStr1() } };
-            }
-
-            XMLElement* root_entry = template_description.RootElement();
-            if (!root_entry)
-                throw std::runtime_error { "No root element was found in XML file" };
-
-            XMLElement* template_entry = root_entry->FirstChildElement("palette");
-
-            while(template_entry)
-            {
-                std::string template_lib = template_entry->Attribute("path");
-                if (template_lib.empty())
-                {
-                    ROS_ERROR("Empty path attribute in template/palette for Groot");
-                    template_entry = template_entry->NextSiblingElement("palette");
-                    continue;
-                    //throw std::runtime_error { "Missing path attribute in template element" };
-                }
-                template_entry = template_entry->NextSiblingElement("palette");
-
-                const std::string& xml_path = templt.second;
-
-                std::string package_path = xml_path.substr(0, xml_path.find("palette"));
-                std::string lib_full_path = package_path + template_lib;
-
-                QString fileName = QString::fromStdString(template_lib);
-                QString filePath = QString::fromStdString(lib_full_path);
-                QFile file(filePath);
-                if (!file.exists())
-                {
-                    ROS_WARN("File %s doesn't exists", lib_full_path.c_str());
-                    continue;
-                }
-
-                auto action = new QAction(fileName, palette_submenu);
-                palette_submenu->addAction(action);
-
-                connect( action, &QAction::triggered, this, [this, filePath]
-                {
-                    QFile file(filePath);
-                    importFromXML( &file );
-                });
-            }
-        }
-        catch(const std::runtime_error& ex)
-        {
-            ROS_ERROR("Error loading palette %s in path %s: %s.", templt.first.c_str(),
-				templt.second.c_str(), ex.what());
-        }
-        
-    }
-
-    if (palette_submenu->isEmpty())
-    {
-        palette_submenu->setEnabled(false);
-    }
-#endif
 
     QPoint globalPos = ui->paletteTreeWidget->mapToGlobal(pos);
     menu.exec(globalPos);
@@ -441,6 +393,21 @@ void SidepanelEditor::on_buttonDownload_clicked()
     else if( fileInfo.completeSuffix() == "skills.json" )
     {
         importFromSkills( fileName );
+    }
+}
+
+void SidepanelEditor::importFromPlugin(const QString& _plugin_path)
+{
+    BT::BehaviorTreeFactory factory;
+    factory.registerFromPlugin(_plugin_path.toStdString());
+
+    const auto& manifests = factory.manifests();
+    for(const auto& entry : manifests)
+    {
+        NodeModel model;
+        model = entry.second;
+
+        emit addNewModel( model );
     }
 }
 
