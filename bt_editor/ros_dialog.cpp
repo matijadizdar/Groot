@@ -11,6 +11,7 @@ ROSDialog::ROSDialog(QWidget *parent) : QDialog(parent),
     ui_ (new Ui::ROSDialog)
 {
     ui_->setupUi(this);
+    ui_->labelWarning->setWordWrap(true);
 
     setWindowTitle("ROS Resources");
     clearErrorMsg();
@@ -44,6 +45,8 @@ void ROSDialog::on_searchButton_pressed()
 {
     const ResourceType resource_type = getSelectedResource();
 
+    QString error_message;
+
     // TODO: handle errors
     if(resource_type == ResourceType::Palettes)
     {
@@ -53,8 +56,19 @@ void ROSDialog::on_searchButton_pressed()
 
         for(const auto& palette_plugin : palettes_plugins)
         {
-            const QStringList& palettes = parsePalettePlugin(palette_plugin);
-            ui_->resourcesList->addItems(palettes);
+            try
+            {
+                const QStringList& palettes = parsePalettePlugin(palette_plugin);
+                ui_->resourcesList->addItems(palettes);
+            }
+            catch(const std::runtime_error& ex)
+            {
+                error_message.append("Couldn't parse palette plugin ");
+                error_message.append(QString::fromStdString(palette_plugin.second));
+                error_message.append(": ");
+                error_message.append(ex.what()); "\n";
+                error_message.append("\n");
+            }
         }
     }
     else if(resource_type == ResourceType::Plugins)
@@ -65,10 +79,29 @@ void ROSDialog::on_searchButton_pressed()
 
         for(const auto& tree_plugin : tree_plugins)
         {
-            const QStringList& plugins = parseTreePlugin(tree_plugin);
-            ui_->resourcesList->addItems(plugins);
+            try
+            {
+                const QStringList& plugins = parseTreePlugin(tree_plugin);
+                ui_->resourcesList->addItems(plugins);
+            }
+            catch(const std::runtime_error& ex)
+            {
+                error_message.append("Couldn't parse tree plugin ");
+                error_message.append(QString::fromStdString(tree_plugin.second));
+                error_message.append(": ");
+                error_message.append(ex.what()); "\n";
+                error_message.append("\n");
+            }
         }
     }
+
+    if(!error_message.isEmpty()) { setErrorMsg(error_message); }
+}
+
+void ROSDialog::on_resourceComboBox_currentIndexChanged(int)
+{
+    clearErrorMsg();
+    ui_->resourcesList->clear();
 }
 
 void ROSDialog::setErrorMsg(const QString& _message)

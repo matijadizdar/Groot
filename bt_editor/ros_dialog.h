@@ -29,6 +29,7 @@ class ROSDialog : public QDialog
 
     private slots:
         void on_searchButton_pressed();
+        void on_resourceComboBox_currentIndexChanged(int index);
 
     private:
         void setErrorMsg(const QString& _message);
