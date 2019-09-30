@@ -154,7 +154,9 @@ MainWindow::MainWindow(GraphicMode initial_mode, QWidget *parent) :
             {
                 ui->tabWidget->setTabText(index, new_ID);
                 _tab_info.insert( {new_ID, _tab_info.at(prev_ID)}  );
-                _tab_info.erase( prev_ID );
+
+                if(prev_ID != new_ID) { _tab_info.erase( prev_ID ); }
+
                 break;
             }
         }
