@@ -533,6 +533,7 @@ void CleanPreviousModels(QWidget *parent,
             if( ret == QMessageBox::Yes)
             {
                 prev_models = BuiltinNodeModels();
+                prev_models.insert(new_models.begin(), new_models.end());
             }
             break;
         }

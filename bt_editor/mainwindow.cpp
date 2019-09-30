@@ -374,12 +374,17 @@ void MainWindow::loadFromXML(const QString& xml_text)
             createTab("BehaviorTree");
             _main_tree = "BehaviorTree";
         }
-        else{
+        else
+        {
             currentTabInfo()->nodeReorder();
         }
+
         CleanPreviousModels(this, _treenode_models, custom_models);
+
+        _editor_widget->updateTreeView();
     }
-    catch (std::exception& err) {
+    catch (std::exception& err)
+    {
         error = true;
         err_message = err.what();
     }
@@ -393,7 +398,8 @@ void MainWindow::loadFromXML(const QString& xml_text)
                              tr("It was not possible to parse the file. Error:\n\n%1"). arg( err_message ),
                              QMessageBox::Ok);
     }
-    else{
+    else
+    {
         onSceneChanged();
         onPushUndo();
     }
