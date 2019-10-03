@@ -13,7 +13,7 @@ if( CATKIN_DEVEL_PREFIX OR CATKIN_BUILD_BINARY_PACKAGE)
 endif()
 
 if(catkin_FOUND)
-  find_package(catkin REQUIRED COMPONENTS behaviortree_cpp_v3 rosbag rosbag_storage roscpp)
+  find_package(catkin REQUIRED COMPONENTS behavior_tree_core rosbag rosbag_storage roscpp)
   find_package(cmake_modules REQUIRED)
   find_package(TinyXML2 REQUIRED)
 
@@ -24,7 +24,7 @@ if(catkin_FOUND)
   catkin_package(
     INCLUDE_DIRS 
     LIBRARIES qt_node_editor
-    CATKIN_DEPENDS behaviortree_cpp_v3
+    CATKIN_DEPENDS behavior_tree_core
     DEPENDS TinyXML2
     )
 endif(catkin_FOUND)
@@ -128,7 +128,7 @@ SET(GROOT_DEPENDENCIES QtNodeEditor )
 if( catkin_FOUND )
     SET(GROOT_DEPENDENCIES ${GROOT_DEPENDENCIES} ${catkin_LIBRARIES} ${TinyXML2_LIBRARIES})
 else()
-    SET(GROOT_DEPENDENCIES ${GROOT_DEPENDENCIES} behaviortree_cpp_v3 )
+    SET(GROOT_DEPENDENCIES ${GROOT_DEPENDENCIES} behavior_tree_core )
 endif()
 
 if( ZMQ_FOUND )
