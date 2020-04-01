@@ -26,7 +26,15 @@ QStringList parsePalettePlugin(const ROSPluginInfo& _plugin)
 
     if(template_description.Error())
     {
-        throw std::runtime_error { std::string { template_description.ErrorName() } + ": " + std::string { template_description.GetErrorStr1() } };
+        std::string error_msg;
+        #ifdef MELODIC
+        error_msg = std::string { template_description.ErrorName() } + ": " + std::string { template_description.ErrorStr() };
+        #endif
+
+        #ifndef MELODIC
+        error_msg =  std::string { template_description.ErrorName() } + ": " + std::string { template_description.GetErrorStr1() };
+        #endif 
+        throw std::runtime_error { error_msg };
     }
 
     XMLElement* root_entry = template_description.RootElement();
@@ -81,8 +89,15 @@ QStringList parseTreePlugin(const ROSPluginInfo& _plugin)
 
     if(plugin_description.Error())
     {
-        throw std::runtime_error { std::string { "XML file may be ill-formed ( " }
-                                    + plugin_description.GetErrorStr1() };
+        std::string error_msg;
+        #ifdef MELODIC
+        error_msg = std::string { plugin_description.ErrorName() } + ": " + std::string { plugin_description.ErrorStr() };
+        #endif
+
+        #ifndef MELODIC
+        error_msg = std::string { plugin_description.ErrorName() } + ": " + std::string { plugin_description.GetErrorStr1() };
+        #endif 
+        throw std::runtime_error { error_msg };
     }
 
     XMLElement* root_entry = plugin_description.RootElement(); 

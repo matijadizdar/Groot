@@ -5,6 +5,10 @@ project(groot)
 find_package(Qt5 COMPONENTS  Core Widgets Gui OpenGL Xml Svg)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}  "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
+if($ENV{ROS_DISTRO} STREQUAL "melodic" )
+add_definitions(-DMELODIC)
+endif()
+
 #############################################################
 # http://answers.ros.org/question/230877/optionally-build-a-package-with-catkin/
 if( CATKIN_DEVEL_PREFIX OR CATKIN_BUILD_BINARY_PACKAGE)
