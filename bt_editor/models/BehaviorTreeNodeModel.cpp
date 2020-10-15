@@ -131,6 +131,7 @@ BehaviorTreeDataModel::BehaviorTreeDataModel(const NodeModel &model):
 
             QLabel* form_label  =  new QLabel( label, _params_widget );
             form_label->setToolTip( description );
+            form_label->setStyleSheet("QToolTip {color: black; background-color: rgb(200,200,200); border: 0px;}" );
 
             form_field->setMinimumWidth(DEFAULT_FIELD_WIDTH);
 
