@@ -1,0 +1,222 @@
+# TODO:
+
+name: Build and Release for ROS Kinetic & ROS Melodic
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch touching comments to recommit
+on: [push, pull_request]
+# Enable this to only trigger this workflow for when a certain tag is created and pushed
+#  tags:
+#    - '*.*.*'
+
+# Declare some global variables
+env:
+  ROS_KINETIC: Kinetic
+  ROS_MELODIC: Melodic
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # Build step
+  # Sets up Kinetic and Melodic containers, installs extra dependencies,
+  # builds a debian file and publishes it as an artifact
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    # Ensures that the same step gets duplicated to any number of containers. For now we just want ROS Kinetic and ROS Melodic
+    strategy:
+      matrix:
+        container:
+          - "ros:melodic"
+          - "ros:kinetic"
+        include:
+          - container: "ros:melodic"
+            ros_distribution: Melodic
+          - container: "ros:kinetic"
+            ros_distribution: Kinetic
+
+    container:
+      # Specify which container type to use according to the container strategy matrix
+      image: ${{ matrix.container }}
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Official ROS Containers come with outdated Git, which, in turn, mean that the target repo is downloaded and
+      # unziped by github rather than cloned. Since later on we require .git folder, we need this step to update Git first
+      - name: Update git
+        run: |
+          apt-get update
+          apt-get install -yq software-properties-common apt-utils
+          add-apt-repository -y -u ppa:git-core/ppa
+          apt-get install -yq git
+        shell: bash
+
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - name: Checkout code
+        uses: actions/checkout@v2 #https://github.com/marketplace/actions/checkout
+        with:
+          fetch-depth: 0
+
+      # Compute the repo name without the organization prefix
+      - name: Compute repo name
+        id: repo_name
+        run: |
+          echo "REPO_NAME=$(echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}' | sed -e "s/:refs//")" >> $GITHUB_ENV
+        
+      # Install additional dependencies
+      - name: Install additional dependencies
+        run: |
+          apt-get update
+          apt-get install -yq debhelper python-bloom python-rosdep python-rosinstall python-wstool build-essential fakeroot wget
+          wget -O - http://robotics.upo.es/repos/apt/conf/harurepo.gpg.key | apt-key add -
+          wget -P /etc/apt/sources.list.d/ http://robotics.upo.es/repos/apt/conf/harurepo.list
+          apt-get update
+        shell: bash
+
+      # Create catkin workspace
+      - name: Create catkin workspace
+        shell: bash
+        run: |
+          source /opt/ros/"$(rosversion -d)"/setup.bash
+          mkdir -p ~/catkin_ws/src && cd ~/catkin_ws && catkin_make
+          mkdir ./src/$REPO_NAME/
+          cp -r $GITHUB_WORKSPACE/. ~/catkin_ws/src/$REPO_NAME
+          mv ~/catkin_ws $GITHUB_WORKSPACE/
+      - name: Run wstool  
+        shell: bash
+        working-directory: catkin_ws
+        run: '(test -f src/$REPO_NAME/*.rosinstall && 
+          wstool init ./src/ ./src/$REPO_NAME/$REPO_NAME.rosinstall && echo "wstool dependencies updated") || echo "No rosinstall file found, skipping wstool step"'
+
+      # Update rosdep
+      - name: Update rosdep
+        working-directory: catkin_ws
+        run: |
+          echo "yaml https://raw.githubusercontent.com/robotics-upo/rosdistro/master/rosdep.yaml" > /etc/ros/rosdep/sources.list.d/50-user-packages.list
+          rosdep update
+          rosdep install --from-paths ./src --rosdistro "$(rosversion -d)" -y -r --os=ubuntu:"$(lsb_release -c --short)"
+        shell: bash
+
+      # Install bloom in the target container
+      - name: Build debian file
+        working-directory: catkin_ws
+        run: |
+          source /opt/ros/"$(rosversion -d)"/setup.bash
+          source ./devel/setup.bash
+          wget -O - https://raw.githubusercontent.com/robotics-upo/rosdistro/master/generate_debian_pkgs.sh > generate_debian_pkgs.sh
+          chmod +x ./generate_debian_pkgs.sh
+          ./generate_debian_pkgs.sh --workspace_folder=$(pwd) --output_folder=$(pwd) --packages=groot
+        shell: bash
+      # Store the package version
+      - name: Save package version
+        id: package_version
+        run: |
+          catkin_package_version > pkg_version.txt
+        shell: bash
+
+      # # Upload the debian file as an artifact
+      - uses: actions/upload-artifact@v2
+        name: Upload debian artifact
+        with: 
+         name: ${{ matrix.ros_distribution }}
+         path: catkin_ws/*.deb
+
+      # Generate CHANGELOG for Release body
+      - name: Generate CHANGELOG for Release body
+        working-directory: catkin_ws
+        run: |
+          source /opt/ros/"$(rosversion -d)"/setup.bash
+          cd ./src/$REPO_NAME
+          catkin_generate_changelog -y --all --skip-contributors --skip-merges --print-root > ./changelog.rst
+          mv ./changelog.rst $GITHUB_WORKSPACE
+        shell: bash
+
+      #Upload the changelog file as an artifact
+      - uses: actions/upload-artifact@v2 #https://github.com/marketplace/actions/upload-a-build-artifact
+        name: Upload Changelog artifact
+        with:
+          name: changelog
+          path: ${{ github.workspace }}/changelog.rst ##It's uploaded as a zip file
+
+      - uses: actions/upload-artifact@v2 #https://github.com/marketplace/actions/upload-a-build-artifact
+        name: Upload version artifact
+        with:
+          name: version
+          path: ${{ github.workspace }}/pkg_version.txt ##It's uploaded as a zip file
+
+  # Release step
+  # Publishes the debian files from both ROS Kinetic and Melodic
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    steps:
+      # Download the release asset for ROS Kinetic
+      - name: Download Release Artifacts
+        uses: actions/download-artifact@v2 #https://github.com/actions/download-artifact
+
+      - name: Determine package version
+        id: package_version
+        run: |
+          echo "::set-output name=version::$(cat version/pkg_version.txt)"
+        shell: bash
+      # Create release on github
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1 #https://github.com/marketplace/actions/create-a-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+        with:
+          tag_name: ${{ steps.package_version.outputs.version }}
+          release_name: Release ${{ steps.package_version.outputs.version }}
+          body_path: ${{ github.workspace }}/changelog/changelog.rst
+          draft: false
+          prerelease: false
+
+      # Zip debian files
+      - name: Zip debian files
+        run: |
+          for i in */; do zip -r "${i%/}.zip" "$i"; done
+      # Upload ROS Kinetic Release Asset
+      - name: Upload ROS Kinetic Release Asset
+        uses: actions/upload-release-asset@v1 #https://github.com/marketplace/actions/upload-a-release-asset
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
+          asset_path: ./${{ env.ROS_KINETIC }}.zip
+          asset_name: ${{ env.ROS_KINETIC }}.zip
+          asset_content_type: application/zip
+
+      # Upload ROS Melodic Release Asset
+      - name: Upload ROS Melodic Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
+          asset_path: ./${{ env.ROS_MELODIC }}.zip
+          asset_name: ${{ env.ROS_MELODIC }}.zip
+          asset_content_type: application/zip
+
+      - name: Move debians to github workspace
+        run: |
+          mkdir debians
+          cp $GITHUB_WORKSPACE/Kinetic/*.deb $GITHUB_WORKSPACE/debians
+          cp $GITHUB_WORKSPACE/Melodic/*.deb $GITHUB_WORKSPACE/debians
+
+      - name: Copy folder content recursively to remote
+        uses: garygrossgarten/github-action-scp@release
+        with:
+          local: debians
+          remote: automated_deploy/
+          host: ${{ secrets.UPO_SERVER }}
+          username: ${{ secrets.UPO_USER }}
+          password: ${{ secrets.ROBOTICS_PASSWORD }}
+
+      - name: Add packages to repo
+        uses: garygrossgarten/github-action-ssh@release
+        with:
+          command: sudo ./add_pkg.sh
+          host: ${{ secrets.UPO_SERVER }}
+          username: ${{ secrets.UPO_USER }}
+          password: ${{ secrets.ROBOTICS_PASSWORD }}

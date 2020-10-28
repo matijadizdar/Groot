@@ -1,0 +1,4 @@
+- git:
+    local-name: behavior_tree_core
+    uri: https://github.com/robotics-upo/BehaviorTree.CPP.git
+    version: master
