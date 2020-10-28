@@ -274,6 +274,12 @@ void MainWindow::loadFromPlugin(const QString& plugin_path)
     {
         NodeModel model;
         model = entry.second;
+
+        //Note: bt_factory (BehaviorTree.CPP includes in its default manifest an empty
+        //subtree decorator called SubTree. We are ignoring it here in grot, otherwise we
+        //would get an empty block that crashes the app when it's used)
+        if(model.registration_ID == "SubTree") { continue; }
+
         onAddToModelRegistry(model);
     }
 }
