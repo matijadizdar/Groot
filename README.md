@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/BehaviorTree/Groot.svg?branch=master)](https://travis-ci.org/BehaviorTree/Groot)
+![Build and Release for ROS Kinetic & ROS Melodic](https://github.com/robotics-upo/Groot/workflows/Build%20and%20Release%20for%20ROS%20Kinetic%20&%20ROS%20Melodic/badge.svg)
 
 # Groot 
 

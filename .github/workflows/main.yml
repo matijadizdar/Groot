@@ -84,13 +84,8 @@ jobs:
       - name: Run wstool  
         shell: bash
         working-directory: catkin_ws
-        # env:
-          # GITHUB_USER: HaruBotAccess
-          # GITHUB_PAT: ${{ secrets.CI_TOKEN }}
         run: '(test -f src/$REPO_NAME/*.rosinstall && 
           wstool init ./src/ ./src/$REPO_NAME/$REPO_NAME.rosinstall && echo "wstool dependencies updated") || echo "No rosinstall file found, skipping wstool step"'
-          # echo "https://$GITHUB_USER:$GITHUB_PAT@github.com" >> ~/.git-credentials &&
-          # git config --global credential.helper store &&
 
       # Update rosdep
       - name: Update rosdep
@@ -109,7 +104,7 @@ jobs:
           source ./devel/setup.bash
           wget -O - https://raw.githubusercontent.com/robotics-upo/rosdistro/master/generate_debian_pkgs.sh > generate_debian_pkgs.sh
           chmod +x ./generate_debian_pkgs.sh
-          ./generate_debian_pkgs.sh --workspace_folder=$(pwd) --output_folder=$(pwd) --packages=idmind_tabletop
+          ./generate_debian_pkgs.sh --workspace_folder=$(pwd) --output_folder=$(pwd) --packages=groot
         shell: bash
       # Store the package version
       - name: Save package version
