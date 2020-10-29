@@ -42,6 +42,5 @@
     <exec_depend>libzmq3-dev</exec_depend>
     <exec_depend>rosbag</exec_depend>
     <exec_depend>rosbag_storage</exec_depend>
-    <exec_depend>behavior_tree_ros</exec_depend>
 
 </package>
