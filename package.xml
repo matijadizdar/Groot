@@ -1,11 +1,11 @@
 <?xml version="1.0"?>
 <package format="2">
     <name>groot</name>
-    <version>1.1.0</version>
+    <version>1.2.0</version>
     <description>Graphical editor to create behaviour trees</description>
 
+    <maintainer email="jponchu@upo.es">Javier Ponce</maintainer>
     <maintainer email="davide.faconti@gmail.com">Davide Faconti</maintainer>
-    <maintainer email="apaegue@upo.es">Alvaro Paez</maintainer>
 
     <license>MIT</license>
 
