@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
     <name>groot</name>
-    <version>1.2.0</version>
+    <version>1.2.1</version>
     <description>Graphical editor to create behaviour trees</description>
 
     <maintainer email="jponchu@upo.es">Javier Ponce</maintainer>
