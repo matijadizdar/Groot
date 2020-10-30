@@ -6,6 +6,7 @@
 #include <QMessageBox>
 #include <QtDebug>
 #include <QLineEdit>
+#include <QMap>
 
 using namespace QtNodes;
 
@@ -239,4 +240,102 @@ QDomElement writePortModel(const QString& port_name, const PortModel& port, QDom
     port_element.appendChild(description);
   }
   return port_element;
+}
+
+QString xmlDocumentToString(const QDomDocument &document)
+{
+  QString output_string;
+
+  QXmlStreamWriter stream(&output_string);
+
+  stream.setAutoFormatting(true);
+  stream.setAutoFormattingIndent(4);
+
+  stream.writeStartDocument();
+
+  auto root_element = document.documentElement();
+
+  stream.writeStartElement(root_element.tagName());
+
+  streamElementAttributes(stream, root_element);
+
+  auto next_node = root_element.firstChild();
+
+  while ( !next_node.isNull() )
+  {
+    recursivelySaveNodeCanonically(stream, next_node);
+
+    if ( stream.hasError() )
+    {
+        break;
+    }
+    next_node = next_node.nextSibling();
+  }
+
+  stream.writeEndElement();
+  stream.writeEndDocument();
+
+  return output_string;
+}
+
+void streamElementAttributes(QXmlStreamWriter &stream, const QDomElement &element)
+{
+    if (element.hasAttributes())
+    {
+        QMap<QString, QString> attributes;
+        const QDomNamedNodeMap attributes_map = element.attributes();
+
+        for (int i = 0; i < attributes_map.count(); ++i)
+        {
+           auto attribute = attributes_map.item(i);
+            attributes.insert(attribute.nodeName(), attribute.nodeValue());
+        }
+
+        auto i = attributes.constBegin();
+        while (i != attributes.constEnd())
+        {
+            stream.writeAttribute(i.key(), i.value());
+            ++i;
+        }
+    }
+}
+
+void recursivelySaveNodeCanonically(QXmlStreamWriter &stream, const QDomNode &parent_node)
+{
+  if ( stream.hasError() )
+  {
+    return;
+  }
+
+  if ( parent_node.isElement() )
+  {
+    const QDomElement parent_element = parent_node.toElement();
+
+    if ( !parent_element.isNull() )
+    {
+        stream.writeStartElement(parent_element.tagName());
+
+        streamElementAttributes(stream, parent_element);
+
+        if (parent_element.hasChildNodes())
+        {
+            auto child = parent_element.firstChild();
+            while ( !child.isNull() )
+            {
+                recursivelySaveNodeCanonically(stream, child);
+                child = child.nextSibling();
+            }
+        }
+
+        stream.writeEndElement();
+    }
+  }
+  else if (parent_node.isComment())
+  {
+    stream.writeComment(parent_node.nodeValue());
+  }
+  else if (parent_node.isText())
+  {
+    stream.writeCharacters(parent_node.nodeValue());
+  }
 }

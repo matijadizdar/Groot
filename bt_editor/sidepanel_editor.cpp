@@ -347,11 +347,12 @@ void SidepanelEditor::on_buttonUpload_clicked()
         fileName += ".xml";
     }
 
+    QString xml_text = xmlDocumentToString(doc);
 
     QFile file(fileName);
     if (file.open(QIODevice::WriteOnly)) {
         QTextStream stream(&file);
-        stream << doc.toString(4) << endl;
+        stream << xml_text << endl;
     }
 
     directory_path = QFileInfo(fileName).absolutePath();

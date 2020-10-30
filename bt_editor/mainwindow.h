@@ -143,12 +143,6 @@ private:
 
     void refreshExpandedSubtrees();
 
-    void streamElementAttributes(QXmlStreamWriter &stream, const QDomElement &element) const;
-
-    QString xmlDocumentToString(const QDomDocument &document) const;
-
-    void recursivelySaveNodeCanonically(QXmlStreamWriter &stream, const QDomNode &parent_node) const;
-
     struct SavedState
     {
         QString main_tree;
