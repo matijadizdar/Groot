@@ -45,7 +45,7 @@ jobs:
       - name: Update git
         run: |
           apt-get update
-          apt-get install -yq software-properties-common apt-utils
+          apt-get install -yq software-properties-common apt-utils curl
           add-apt-repository -y -u ppa:git-core/ppa
           apt-get install -yq git
         shell: bash
@@ -143,6 +143,14 @@ jobs:
           name: version
           path: ${{ github.workspace }}/pkg_version.txt ##It's uploaded as a zip file
 
+      - name: Notify Build Failure
+        if: ${{ failure() }}
+        env:
+          SLACK: ${{ secrets.slack_message }}
+        run: | 
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"Failed to execute build step of '"$REPO_NAME"' "}' $SLACK
+        shell: bash
+
   # Release step
   # Publishes the debian files from both ROS Kinetic and Melodic
   release:
@@ -220,3 +228,20 @@ jobs:
           host: ${{ secrets.UPO_SERVER }}
           username: ${{ secrets.UPO_USER }}
           password: ${{ secrets.ROBOTICS_PASSWORD }}
+
+      - name: Notify Build Failure
+        if: ${{ failure() }}
+        env:
+          SLACK: ${{ secrets.slack_message }}
+        run: | 
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"Failed to execute build step of '"$REPO_NAME"' "}' $SLACK
+        shell: bash
+
+      - name: Notify new Release
+        if: ${{ success() }}
+        env:
+          SLACK: ${{ secrets.slack_message }}
+          VERSION: ${{ steps.package_version.outputs.version }}
+        run: | 
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"New release of '"$REPO_NAME"' version '"$VERSION"' available! "}' $SLACK
+        shell: bash
