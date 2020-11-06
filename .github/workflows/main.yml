@@ -229,12 +229,18 @@ jobs:
           username: ${{ secrets.UPO_USER }}
           password: ${{ secrets.ROBOTICS_PASSWORD }}
 
+      - name: Compute repo name
+        id: repo_name
+        run: |
+          echo "REPO_NAME=$(echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}' | sed -e "s/:refs//")" >> $GITHUB_ENV
+      
       - name: Notify Build Failure
         if: ${{ failure() }}
         env:
           SLACK: ${{ secrets.slack_message }}
+          VERSION: ${{ steps.package_version.outputs.version }}
         run: | 
-          curl -X POST -H 'Content-type: application/json' --data '{"text":"Failed to execute build step of '"$REPO_NAME"' "}' $SLACK
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"Failed release '"$VERSION"' version of '"$REPO_NAME"' "}' $SLACK
         shell: bash
 
       - name: Notify new Release
