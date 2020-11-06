@@ -20,6 +20,7 @@ endif()
 
 if(catkin_FOUND)
   find_package(catkin REQUIRED COMPONENTS behavior_tree_core rosbag rosbag_storage roscpp)
+  find_package(behavior_tree_core 3.2.0 REQUIRED)
   find_package(cmake_modules REQUIRED)
   find_package(TinyXML2 REQUIRED)
 
