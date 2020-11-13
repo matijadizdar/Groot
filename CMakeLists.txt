@@ -151,8 +151,8 @@ add_executable(Groot ./bt_editor/main.cpp  ${RESOURCE_FILES})
 target_link_libraries(Groot PUBLIC behavior_tree_editor)
 list(APPEND GROOT_TARGETS Groot)
 
-# TODO: test linking errors fixed, leave tests commented?
-# add_subdirectory(test)
+# tests
+add_subdirectory(test)
 
 ######################################################
 # INSTALL
