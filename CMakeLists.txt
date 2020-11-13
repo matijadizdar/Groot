@@ -58,7 +58,9 @@ add_subdirectory( QtNodeEditor )
 
 set(BUILD_EXAMPLES   OFF CACHE BOOL "")
 set(BUILD_UNIT_TESTS OFF CACHE BOOL "")
-set(BUILD_TOOLS OFF CACHE BOO "")
+set(BUILD_TOOLS OFF CACHE BOOL "")
+set(BUILD_TESTING OFF CACHE BOOL "")
+set(CATKIN_ENABLE_TESTING OFF CACHE BOOL "")
 
 if(NOT catkin_FOUND)
     # use git submodule only if you are not compiling with catkin
@@ -149,7 +151,7 @@ add_executable(Groot ./bt_editor/main.cpp  ${RESOURCE_FILES})
 target_link_libraries(Groot PUBLIC behavior_tree_editor)
 list(APPEND GROOT_TARGETS Groot)
 
-# TODO: fix test linking errors
+# TODO: test linking errors fixed, leave tests commented?
 # add_subdirectory(test)
 
 ######################################################
