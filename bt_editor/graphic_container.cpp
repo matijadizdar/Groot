@@ -269,10 +269,14 @@ void GraphicContainer::createSubtree(Node &root_node, QString subtree_name )
     auto main_win = dynamic_cast<MainWindow*>( parent() );
 
     if( main_win->getTabByName(subtree_name) != nullptr ||
-            _model_registry->registeredModelsByCategory("SubTree").count( subtree_name ))
+            _model_registry->registeredModelsByCategory("SubTree").count( subtree_name ) ||
+            _model_registry->registeredModelsByCategory("Action").count( subtree_name ) ||
+            _model_registry->registeredModelsByCategory("Control").count( subtree_name ) ||
+            _model_registry->registeredModelsByCategory("Decorator").count( subtree_name ) ||
+            _model_registry->registeredModelsByCategory("Condition").count( subtree_name ))
     {
-        QMessageBox::warning( nullptr, "SubTree already exists",
-                              tr("There is already a SubTree called [%1].\n"
+        QMessageBox::warning( nullptr, "Node already exists",
+                              tr("There is already a node called [%1].\n"
                                  "Use another name.").arg(subtree_name),
                               QMessageBox::Ok);
         return;
