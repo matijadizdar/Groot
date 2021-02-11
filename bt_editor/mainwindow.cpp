@@ -280,8 +280,17 @@ void MainWindow::loadFromPlugin(const QString& plugin_path)
         //subtree decorator called SubTree. We are ignoring it here in grot, otherwise we
         //would get an empty block that crashes the app when it's used)
         if(model.registration_ID == "SubTree") { continue; }
+        if(BuiltinNodeModels().count(model.registration_ID) != 0) { continue; }
 
-        onAddToModelRegistry(model);
+        if(_treenode_models.find(model.registration_ID) == _treenode_models.end())
+            onAddToModelRegistry(model);
+        else
+        {
+            _treenode_models.erase(model.registration_ID);
+            _model_registry->unregisterModel(model.registration_ID);
+            onAddToModelRegistry(model);
+            onTreeNodeEdited(model.registration_ID, model.registration_ID);
+        }
     }
 }
 

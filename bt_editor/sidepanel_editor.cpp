@@ -412,8 +412,13 @@ void SidepanelEditor::importFromPlugin(const QString& _plugin_path)
         //subtree decorator called SubTree. We are ignoring it here in grot, otherwise we
         //would get an empty block that crashes the app when it's used)
         if(model.registration_ID == "SubTree") { continue; }
+        if(BuiltinNodeModels().count(model.registration_ID) != 0) { continue; }
 
-        emit addNewModel( model );
+        auto map_it = _tree_nodes_model.find(model.registration_ID);
+        if (map_it == _tree_nodes_model.end())
+            emit addNewModel( model );
+        else
+            onReplaceModel(QString::fromStdString(entry.first), model);
     }
 }
 
@@ -476,7 +481,10 @@ void SidepanelEditor::importFromXML(QFile* file)
 
     for(auto& it: custom_models)
     {
-        addNewModel( it.second );
+        if(_tree_nodes_model.find(it.first) == _tree_nodes_model.end())
+            emit addNewModel( it.second );
+        else
+            onReplaceModel(it.first, it.second);
     }
 
     // Load subtrees definitions too
