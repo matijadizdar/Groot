@@ -417,6 +417,7 @@ QtNodes::Node* GraphicContainer::substituteNode(Node *old_node, const QString& n
                 bt_new_node->setPortMapping( old_it.first, old_it.second );
             }
         }
+        bt_new_node->updateNodeSize();
     }
 
     QPointF new_pos = prev_pos;
