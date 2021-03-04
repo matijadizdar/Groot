@@ -27,11 +27,9 @@ QStringList parsePalettePlugin(const ROSPluginInfo& _plugin)
     if(template_description.Error())
     {
         std::string error_msg;
-        #ifdef MELODIC
+        #if TINYXML2_MAJOR_VERSION >= 6
         error_msg = std::string { template_description.ErrorName() } + ": " + std::string { template_description.ErrorStr() };
-        #endif
-
-        #ifndef MELODIC
+        #else
         error_msg =  std::string { template_description.ErrorName() } + ": " + std::string { template_description.GetErrorStr1() };
         #endif 
         throw std::runtime_error { error_msg };
@@ -90,11 +88,9 @@ QStringList parseTreePlugin(const ROSPluginInfo& _plugin)
     if(plugin_description.Error())
     {
         std::string error_msg;
-        #ifdef MELODIC
+        #if TINYXML2_MAJOR_VERSION >= 6
         error_msg = std::string { plugin_description.ErrorName() } + ": " + std::string { plugin_description.ErrorStr() };
-        #endif
-
-        #ifndef MELODIC
+        #else
         error_msg = std::string { plugin_description.ErrorName() } + ": " + std::string { plugin_description.GetErrorStr1() };
         #endif 
         throw std::runtime_error { error_msg };
