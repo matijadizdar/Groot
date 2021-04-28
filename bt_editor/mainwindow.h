@@ -123,6 +123,8 @@ public slots:
 
     void on_lineEditSubtreesFilter_textChanged(const QString &text);
 
+    void on_comboBoxSubtreesFilter_currentTextChanged(const QString &text);
+
 signals:
     void updateGraphic();
 
@@ -146,6 +148,8 @@ private:
     void refreshNodesLayout(QtNodes::PortLayout new_layout);
 
     void refreshExpandedSubtrees();
+
+    void refreshComboBoxSubtreesFilter();
 
     struct SavedState
     {

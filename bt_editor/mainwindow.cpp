@@ -1591,14 +1591,11 @@ void MainWindow::on_actionReportIssue_triggered()
 
 void MainWindow::on_pushButtonSubtreesFilter_clicked()
 {
-    //printf("[Groot] Cleaning subtrees filtering\n");
     ui->lineEditSubtreesFilter->clear();
 }
 
 void MainWindow::on_lineEditSubtreesFilter_textChanged(const QString &text)
-{
-    //printf("[Groot] Subtrees filter text changed: %s\n", text.toStdString().c_str());
-    
+{   
     // Filter Subtrees = Hide tabs which text doesn't contain the filtering text.
     for (int index = 0; index < ui->tabWidget->count(); index++)
     {
@@ -1610,7 +1607,35 @@ void MainWindow::on_lineEditSubtreesFilter_textChanged(const QString &text)
         {
             // Not disable the main tree
             if(ui->tabWidget->tabText(index) != _main_tree.toStdString().c_str())
+            {
                 ui->tabWidget->setTabEnabled(index, false);
+            }
+        }
+    }
+
+    refreshComboBoxSubtreesFilter();
+}
+
+void MainWindow::refreshComboBoxSubtreesFilter()
+{
+    ui->comboBoxSubtreesFilter->clear();
+
+    for (int index = 0; index < ui->tabWidget->count(); index++)
+    {
+        if(ui->tabWidget->isTabEnabled(index))
+        {
+            ui->comboBoxSubtreesFilter->insertItem(index, ui->tabWidget->tabText(index));
+        }
+    }
+}
+
+void MainWindow::on_comboBoxSubtreesFilter_currentTextChanged(const QString &text)
+{
+    for (int index = 0; index < ui->tabWidget->count(); index++)
+    {
+        if(ui->tabWidget->tabText(index) == text.toStdString().c_str())
+        {
+            ui->tabWidget->setCurrentIndex(index);
         }
     }
 }

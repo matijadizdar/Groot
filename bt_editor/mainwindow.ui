@@ -741,6 +741,16 @@ QToolButton:disabled{
            </widget>
           </item>
           <item>
+           <widget class="QComboBox" name="comboBoxSubtreesFilter">
+            <property name="minimumSize">
+             <size>
+              <width>200</width>
+              <height>0</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QPushButton" name="pushButtonSubtreesFilter">
             <property name="text">
              <string notr="true"/>
