@@ -420,6 +420,8 @@ void SidepanelEditor::importFromPlugin(const QString& _plugin_path)
         else
             onReplaceModel(QString::fromStdString(entry.first), model);
     }
+
+    emit updatingSubtreesFinished();
 }
 
 void SidepanelEditor::importFromXML(QFile* file)
@@ -504,6 +506,8 @@ void SidepanelEditor::importFromXML(QFile* file)
 
         emit loadBehaviorTree(tree, tree_name);
     }
+
+    emit updatingSubtreesFinished();
 }
 
 void SidepanelEditor::importFromSkills(const QString &fileName)

@@ -67,6 +67,8 @@ signals:
 
     void loadBehaviorTree(const AbsBehaviorTree& tree, const QString& name);
 
+    void updatingSubtreesFinished();
+
 private:
     void importFromPlugin(const QString& plugin_path);
     void importFromXML(QFile *file);

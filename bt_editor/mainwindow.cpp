@@ -168,6 +168,12 @@ MainWindow::MainWindow(GraphicMode initial_mode, QWidget *parent) :
         }
     });
 
+    connect( _editor_widget, &SidepanelEditor::updatingSubtreesFinished,
+             this, [this]()
+    {
+        this->refreshComboBoxSubtreesFilter();        
+    });
+
     connect( _replay_widget, &SidepanelReplay::loadBehaviorTree,
             this, &MainWindow::onCreateAbsBehaviorTree );
 
@@ -196,14 +202,12 @@ MainWindow::MainWindow(GraphicMode initial_mode, QWidget *parent) :
     connect( ui->tabWidget->tabBar(), &QTabBar::customContextMenuRequested,
             this, &MainWindow::onTabCustomContextMenuRequested);
 
-    // NOT NEEDED IN CASE OF .ui, it seems this connection is automatically created
-    // connect( ui->pushButtonSubtreesFilter, &QPushButton::clicked,
-    //         this, &MainWindow::on_pushButtonSubtreesFilter_clicked);
-
     createTab("BehaviorTree");
     onTabSetMainTree(0);
     onSceneChanged();
     _current_state = saveCurrentState();
+
+    refreshComboBoxSubtreesFilter();
 }
 
 
@@ -427,6 +431,8 @@ void MainWindow::loadFromXML(const QString& xml_text)
     {
         onSceneChanged();
         onPushUndo();
+
+        refreshComboBoxSubtreesFilter();
     }
 }
 
