@@ -196,6 +196,10 @@ MainWindow::MainWindow(GraphicMode initial_mode, QWidget *parent) :
     connect( ui->tabWidget->tabBar(), &QTabBar::customContextMenuRequested,
             this, &MainWindow::onTabCustomContextMenuRequested);
 
+    // NOT NEEDED IN CASE OF .ui, it seems this connection is automatically created
+    // connect( ui->pushButtonSubtreesFilter, &QPushButton::clicked,
+    //         this, &MainWindow::on_pushButtonSubtreesFilter_clicked);
+
     createTab("BehaviorTree");
     onTabSetMainTree(0);
     onSceneChanged();
@@ -1583,4 +1587,32 @@ void MainWindow::on_actionReportIssue_triggered()
                             "%1").arg(url),
                          QMessageBox::Ok);
     QDesktopServices::openUrl(QUrl(url));
+}
+
+void MainWindow::on_pushButtonSubtreesFilter_clicked()
+{
+    //printf("[Groot] Cleaning subtrees filtering\n");
+    ui->lineEditSubtreesFilter->clear();
+}
+
+void MainWindow::on_lineEditSubtreesFilter_textChanged(const QString &text)
+{
+    //printf("[Groot] Subtrees filter text changed: %s\n", text.toStdString().c_str());
+
+    // Filter Subtrees = Hide tabs which text doesn't contain the filtering text.
+    // Note: starting from index 1, and not from 0, to not hide the main BT tab
+    for (int index = 1; index < ui->tabWidget->count(); index++)
+    {
+        //printf("[Groot]     %s\n", ui->tabWidget->tabText(index).toStdString().c_str());
+
+        if(ui->tabWidget->tabText(index).contains(text, Qt::CaseInsensitive))
+        {
+            ui->tabWidget->setTabEnabled(index, true);
+        }
+        else
+        {
+            ui->tabWidget->setTabEnabled(index, false);
+        }
+        
+    }
 }

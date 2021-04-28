@@ -119,6 +119,10 @@ public slots:
 
     void onTabSetMainTree(int tab_index);
 
+    void on_pushButtonSubtreesFilter_clicked();
+
+    void on_lineEditSubtreesFilter_textChanged(const QString &text);
+
 signals:
     void updateGraphic();
 

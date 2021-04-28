@@ -60,6 +60,7 @@
         <file>svg/fallback_reactive.svg</file>
         <file>svg/sequence_reactive.svg</file>
         <file>svg/turtle.svg</file>
+        <file>svg/backspace.svg</file>
     </qresource>
     <qresource prefix="/"/>
 </RCC>
