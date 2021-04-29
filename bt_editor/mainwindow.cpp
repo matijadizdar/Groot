@@ -143,6 +143,8 @@ MainWindow::MainWindow(GraphicMode initial_mode, QWidget *parent) :
              this, [this](QString ID)
     {
         this->createTab(ID);
+
+        this->refreshComboBoxSubtreesFilter();
     });
 
     connect( _editor_widget, &SidepanelEditor::loadBehaviorTree,
@@ -911,6 +913,8 @@ void MainWindow::onDestroySubTree(const QString &ID)
 
     // TODO: this is a work around until we find a better solution
     clearUndoStacks();
+
+    refreshComboBoxSubtreesFilter();
 }
 
 void MainWindow::onModelRemoveRequested(QString ID)
@@ -1102,6 +1106,8 @@ void MainWindow::onCreateAbsBehaviorTree(const AbsBehaviorTree &tree, const QStr
 
     // TODO_ clear or not?
     clearUndoStacks();
+
+    refreshComboBoxSubtreesFilter();
 }
 
 void MainWindow::on_actionClear_triggered()
