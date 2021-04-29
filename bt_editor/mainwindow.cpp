@@ -168,6 +168,8 @@ MainWindow::MainWindow(GraphicMode initial_mode, QWidget *parent) :
                 break;
             }
         }
+
+        this->refreshComboBoxSubtreesFilter();
     });
 
     connect( _editor_widget, &SidepanelEditor::updatingSubtreesFinished,
