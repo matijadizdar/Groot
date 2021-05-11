@@ -4,7 +4,7 @@ name: Build and Release for ROS Kinetic & ROS Melodic
 
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the master branch touching comments to recommit
-on: [push, pull_request]
+on: [push]
 # Enable this to only trigger this workflow for when a certain tag is created and pushed
 #  tags:
 #    - '*.*.*'
@@ -81,12 +81,7 @@ jobs:
           mkdir ./src/$REPO_NAME/
           cp -r $GITHUB_WORKSPACE/. ~/catkin_ws/src/$REPO_NAME
           mv ~/catkin_ws $GITHUB_WORKSPACE/
-      - name: Run wstool  
-        shell: bash
-        working-directory: catkin_ws
-        run: '(test -f src/$REPO_NAME/*.rosinstall && 
-          wstool init ./src/ ./src/$REPO_NAME/$REPO_NAME.rosinstall && echo "wstool dependencies updated") || echo "No rosinstall file found, skipping wstool step"'
-
+      
       # Update rosdep
       - name: Update rosdep
         working-directory: catkin_ws
@@ -106,6 +101,7 @@ jobs:
           chmod +x ./generate_debian_pkgs.sh
           ./generate_debian_pkgs.sh --workspace_folder=$(pwd) --output_folder=$(pwd) --packages=groot
         shell: bash
+        
       # Store the package version
       - name: Save package version
         id: package_version
