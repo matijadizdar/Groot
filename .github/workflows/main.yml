@@ -61,7 +61,6 @@ jobs:
         id: repo_name
         run: |
           echo "REPO_NAME=$(echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}' | sed -e "s/:refs//")" >> $GITHUB_ENV
-        
       # Install additional dependencies
       - name: Install additional dependencies
         run: |
@@ -77,16 +76,11 @@ jobs:
         shell: bash
         run: |
           source /opt/ros/"$(rosversion -d)"/setup.bash
-          mkdir -p ~/catkin_ws/src && cd ~/catkin_ws && catkin_make
+          mkdir -p ~/catkin_ws/src && cd ~/catkin_ws
           mkdir ./src/$REPO_NAME/
           cp -r $GITHUB_WORKSPACE/. ~/catkin_ws/src/$REPO_NAME
           mv ~/catkin_ws $GITHUB_WORKSPACE/
-      - name: Run wstool  
-        shell: bash
-        working-directory: catkin_ws
-        run: '(test -f src/$REPO_NAME/*.rosinstall && 
-          wstool init ./src/ ./src/$REPO_NAME/$REPO_NAME.rosinstall && echo "wstool dependencies updated") || echo "No rosinstall file found, skipping wstool step"'
-
+      
       # Update rosdep
       - name: Update rosdep
         working-directory: catkin_ws
@@ -94,6 +88,8 @@ jobs:
           echo "yaml https://raw.githubusercontent.com/robotics-upo/rosdistro/master/rosdep.yaml" > /etc/ros/rosdep/sources.list.d/50-user-packages.list
           rosdep update
           rosdep install --from-paths ./src --rosdistro "$(rosversion -d)" -y -r --os=ubuntu:"$(lsb_release -c --short)"
+          source /opt/ros/"$(rosversion -d)"/setup.bash
+          cd $GITHUB_WORKSPACE/catkin_ws && catkin_make
         shell: bash
 
       # Install bloom in the target container
@@ -104,21 +100,22 @@ jobs:
           source ./devel/setup.bash
           wget -O - https://raw.githubusercontent.com/robotics-upo/rosdistro/master/generate_debian_pkgs.sh > generate_debian_pkgs.sh
           chmod +x ./generate_debian_pkgs.sh
-          ./generate_debian_pkgs.sh --workspace_folder=$(pwd) --output_folder=$(pwd) --packages=groot
+          ./generate_debian_pkgs.sh --workspace_folder=. --output_folder=$(echo $GITHUB_WORKSPACE)/debians --package=$PACKAGE_NAME
         shell: bash
+
       # Store the package version
-      - name: Save package version
+      - name: Determine package version
         id: package_version
         run: |
           catkin_package_version > pkg_version.txt
         shell: bash
 
-      # # Upload the debian file as an artifact
+      # Upload the debian file as an artifact
       - uses: actions/upload-artifact@v2
         name: Upload debian artifact
-        with: 
-         name: ${{ matrix.ros_distribution }}
-         path: catkin_ws/*.deb
+        with:
+          name: ${{ matrix.ros_distribution }}
+          path: ${{ github.workspace }}/debians/*.deb
 
       # Generate CHANGELOG for Release body
       - name: Generate CHANGELOG for Release body
@@ -234,13 +231,13 @@ jobs:
         run: |
           echo "REPO_NAME=$(echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}' | sed -e "s/:refs//")" >> $GITHUB_ENV
       
-      - name: Notify Build Failure
+      - name: Notify Release Failure
         if: ${{ failure() }}
         env:
           SLACK: ${{ secrets.slack_message }}
           VERSION: ${{ steps.package_version.outputs.version }}
         run: | 
-          curl -X POST -H 'Content-type: application/json' --data '{"text":"Failed release '"$VERSION"' version of '"$REPO_NAME"' "}' $SLACK
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"Failed to release version '"$VERSION"' of '"$REPO_NAME"' "}' $SLACK
         shell: bash
 
       - name: Notify new Release
