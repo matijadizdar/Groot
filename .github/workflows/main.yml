@@ -96,6 +96,7 @@ jobs:
         working-directory: catkin_ws
         run: |
           source /opt/ros/"$(rosversion -d)"/setup.bash
+          cd $GITHUB_WORKSPACE/catkin_ws && catkin_make
           source ./devel/setup.bash
           wget -O - https://raw.githubusercontent.com/robotics-upo/rosdistro/master/generate_debian_pkgs.sh > generate_debian_pkgs.sh
           chmod +x ./generate_debian_pkgs.sh
