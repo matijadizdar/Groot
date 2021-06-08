@@ -223,6 +223,16 @@ void SidepanelEditor::onContextMenu(const QPoint& pos)
         return;
     }
 
+    // Loop through the category items and prevent the right click
+    // menu from showing for any of the items
+    for (const auto& it : _tree_view_category_items)
+    {
+        const auto category_item = it.second;
+        if( category_item == selected_item ) {
+            return;
+        }
+    }
+
     QMenu menu(this);
 
     QAction* edit   = menu.addAction("Edit");
@@ -408,10 +418,10 @@ void SidepanelEditor::importFromPlugin(const QString& _plugin_path)
         NodeModel model;
         model = entry.second;
 
-        //Note: bt_factory (BehaviorTree.CPP includes in its default manifest an empty 
-        //subtree decorator called SubTree. We are ignoring it here in grot, otherwise we
-        //would get an empty block that crashes the app when it's used)
-        if(model.registration_ID == "SubTree") { continue; }
+        //Note: bt_factory (BehaviorTree.CPP includes in its default manifest 2 empty 
+        //subtree decorator called SubTree and SubTreePlus. We are ignoring it here in groot,
+        // otherwise we would get an empty block that crashes the app when it's used)
+        if(model.registration_ID == "SubTree" || model.registration_ID == "SubTreePlus") { continue; }
         if(BuiltinNodeModels().count(model.registration_ID) != 0) { continue; }
 
         auto map_it = _tree_nodes_model.find(model.registration_ID);
@@ -479,7 +489,13 @@ void SidepanelEditor::importFromXML(QFile* file)
     }
 
     // Load new models
-    CleanPreviousModels(this, _tree_nodes_model, custom_models );
+    auto models_to_remove = GetModelsToRemove(this, _tree_nodes_model, custom_models );
+
+    for(QString model_name : models_to_remove)
+    {
+        emit modelRemoveRequested(model_name);
+    }
+    // CleanPreviousModels(this, _tree_nodes_model, custom_models );
 
     for(auto& it: custom_models)
     {

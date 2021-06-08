@@ -412,7 +412,12 @@ void MainWindow::loadFromXML(const QString& xml_text)
             currentTabInfo()->nodeReorder();
         }
 
-        CleanPreviousModels(this, _treenode_models, custom_models);
+        auto models_to_remove = GetModelsToRemove(this, _treenode_models, custom_models);
+
+        for( QString model_name: models_to_remove )
+        {
+            onModelRemoveRequested(model_name);
+        }
 
         _editor_widget->updateTreeView();
     }
@@ -1167,7 +1172,6 @@ void MainWindow::onTreeNodeEdited(QString prev_ID, QString new_ID)
         }
     }
 }
-
 
 
 void MainWindow::onActionClearTriggered(bool create_new)
