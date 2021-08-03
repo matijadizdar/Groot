@@ -11,8 +11,7 @@ on: [push, pull_request]
 
 # Declare some global variables
 env:
-  ROS_KINETIC: Kinetic
-  ROS_MELODIC: Melodic
+  ROS_NOETIC: Noetic
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -26,13 +25,10 @@ jobs:
     strategy:
       matrix:
         container:
-          - "ros:melodic"
-          - "ros:kinetic"
+          - "ros:noetic"
         include:
-          - container: "ros:melodic"
-            ros_distribution: Melodic
-          - container: "ros:kinetic"
-            ros_distribution: Kinetic
+          - container: "ros:noetic"
+            ros_distribution: Noetic
 
     container:
       # Specify which container type to use according to the container strategy matrix
@@ -65,7 +61,7 @@ jobs:
       - name: Install additional dependencies
         run: |
           apt-get update
-          apt-get install -yq debhelper python-bloom python-rosdep python-rosinstall python-wstool build-essential fakeroot wget
+          apt-get install -yq debhelper python3-bloom python3-rosdep python3-rosinstall python3-wstool build-essential fakeroot wget
           wget -O - http://robotics.upo.es/repos/apt/conf/harurepo.gpg.key | apt-key add -
           wget -P /etc/apt/sources.list.d/ http://robotics.upo.es/repos/apt/conf/harurepo.list
           apt-get update
@@ -181,33 +177,21 @@ jobs:
       - name: Zip debian files
         run: |
           for i in */; do zip -r "${i%/}.zip" "$i"; done
-      # Upload ROS Kinetic Release Asset
-      - name: Upload ROS Kinetic Release Asset
+      # Upload ROS Noetic Release Asset
+      - name: Upload ROS Noetic Release Asset
         uses: actions/upload-release-asset@v1 #https://github.com/marketplace/actions/upload-a-release-asset
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
-          asset_path: ./${{ env.ROS_KINETIC }}.zip
-          asset_name: ${{ env.ROS_KINETIC }}.zip
-          asset_content_type: application/zip
-
-      # Upload ROS Melodic Release Asset
-      - name: Upload ROS Melodic Release Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
-          asset_path: ./${{ env.ROS_MELODIC }}.zip
-          asset_name: ${{ env.ROS_MELODIC }}.zip
+          asset_path: ./${{ env.ROS_NOETIC }}.zip
+          asset_name: ${{ env.ROS_NOETIC }}.zip
           asset_content_type: application/zip
 
       - name: Move debians to github workspace
         run: |
           mkdir debians
-          cp $GITHUB_WORKSPACE/Kinetic/*.deb $GITHUB_WORKSPACE/debians
-          cp $GITHUB_WORKSPACE/Melodic/*.deb $GITHUB_WORKSPACE/debians
+          cp $GITHUB_WORKSPACE/Noetic/*.deb $GITHUB_WORKSPACE/debians
 
       - name: Copy folder content recursively to remote
         uses: garygrossgarten/github-action-scp@release
