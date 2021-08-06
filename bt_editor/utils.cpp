@@ -506,11 +506,11 @@ QtNodes::Node *GetParentNode(QtNodes::Node *node)
     }
 }
 
-std::set<QString> GetModelsToRemove(QWidget* parent,
-                                    NodeModels& prev_models,
-                                    const NodeModels& new_models)
+std::vector<QString> GetModelsToRemove(QWidget* parent,
+                                       NodeModels& prev_models,
+                                       const NodeModels& new_models)
 {
-    std::set<QString> prev_custom_models;
+    std::vector<QString> prev_custom_models;
 
     if( prev_models.size() > BuiltinNodeModels().size() )
     {
@@ -520,7 +520,12 @@ std::set<QString> GetModelsToRemove(QWidget* parent,
             if( BuiltinNodeModels().count(model_name) == 0 &&
                 new_models.count(model_name) == 0)
             {
-                prev_custom_models.insert( model_name );
+                // Order the models for Subtrees to be removed first
+                // This fixes an issue where some leaf models weren't removed
+                if(it.second.type == NodeType::SUBTREE)
+                    prev_custom_models.emplace(prev_custom_models.begin(), model_name);
+                else
+                    prev_custom_models.emplace_back(model_name);
             }
         }
     }

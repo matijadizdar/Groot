@@ -972,15 +972,16 @@ void MainWindow::onModelRemoveRequested(QString ID)
         if( node_found->model().type != NodeType::SUBTREE )
         {
             ret = QMessageBox::warning(this,"Delete TreeNode Model?",
-                                       "Are you sure? This action can't be undone.",
+                                       QString("The Model of [%1] will be removed.\n"
+                                               "Are you sure? This action can't be undone.").arg(ID),
                                        QMessageBox::Cancel | QMessageBox::Yes,
                                        QMessageBox::Cancel);
         }
         else{
             ret = QMessageBox::warning(this,"Delete Subtree?",
-                                       "The Model of the Subtrees will be removed."
-                                       "An expanded version will be added to parent trees.\n"
-                                       "Are you sure? This action can't be undone.",
+                                       QString("The Model of the Subtree [%1] will be removed. "
+                                               "An expanded version will be added to parent trees.\n"
+                                               "Are you sure? This action can't be undone.").arg(ID),
                                        QMessageBox::Cancel | QMessageBox::Yes,
                                        QMessageBox::Cancel);
         }

@@ -488,15 +488,15 @@ void SidepanelEditor::importFromXML(QFile* file)
         return;
     }
 
-    // Load new models
+    // Remove previous models
     auto models_to_remove = GetModelsToRemove(this, _tree_nodes_model, custom_models );
 
     for(QString model_name : models_to_remove)
     {
         emit modelRemoveRequested(model_name);
     }
-    // CleanPreviousModels(this, _tree_nodes_model, custom_models );
 
+    // Load new models
     for(auto& it: custom_models)
     {
         if(_tree_nodes_model.find(it.first) == _tree_nodes_model.end())
