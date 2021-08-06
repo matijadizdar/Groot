@@ -81,6 +81,7 @@ jobs:
       - name: Update rosdep
         working-directory: catkin_ws
         run: |
+          export DEBIAN_FRONTEND=noninteractive
           echo "yaml https://raw.githubusercontent.com/robotics-upo/rosdistro/master/rosdep.yaml" > /etc/ros/rosdep/sources.list.d/50-user-packages.list
           rosdep update --include-eol-distros
           rosdep install --from-paths ./src --rosdistro "$(rosversion -d)" -y -r --os=ubuntu:"$(lsb_release -c --short)"
