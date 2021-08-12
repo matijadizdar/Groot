@@ -352,6 +352,14 @@ AbsBehaviorTree BuildTreeFromXML(const QDomElement& bt_root, const NodeModels& m
         for( int attr=0; attr < attributes.size(); attr++ )
         {
             auto attribute = attributes.item(attr).toAttr();
+            // Backward compatibility with Parallel node
+            // Change old port to new ones keeping the same functionality
+            if (modelID == "Parallel" && attribute.name() == "threshold")
+            {
+                tree_node.ports_mapping.insert( { "failure_threshold", attribute.value() } );
+                tree_node.ports_mapping.insert( { "success_threshold", attribute.value() } );
+                continue;
+            }
             if( attribute.name() != "ID" && attribute.name() != "name")
             {
                 tree_node.ports_mapping.insert( { attribute.name(), attribute.value() } );
