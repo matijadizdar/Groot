@@ -178,8 +178,13 @@ MainWindow::MainWindow(GraphicMode initial_mode, QWidget *parent) :
         this->refreshComboBoxSubtreesFilter();        
     });
 
+    auto createSingleTabBehaviorTree = [this](const AbsBehaviorTree &tree, const QString &bt_name)
+    {
+      onCreateAbsBehaviorTree(tree, bt_name, false);
+    };
+
     connect( _replay_widget, &SidepanelReplay::loadBehaviorTree,
-            this, &MainWindow::onCreateAbsBehaviorTree );
+            this, createSingleTabBehaviorTree);
 
     connect( _replay_widget, &SidepanelReplay::addNewModel,
             this, &MainWindow::onAddToModelRegistry);
@@ -199,7 +204,7 @@ MainWindow::MainWindow(GraphicMode initial_mode, QWidget *parent) :
             this, &MainWindow::onChangeNodesStatus);
 
     connect( _monitor_widget, &SidepanelMonitor::loadBehaviorTree,
-            this, &MainWindow::onCreateAbsBehaviorTree );
+            this, createSingleTabBehaviorTree );
 #endif
 
     ui->tabWidget->tabBar()->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -264,7 +269,10 @@ GraphicContainer* MainWindow::createTab(const QString &name)
             this, &MainWindow::onRequestSubTreeExpand );
 
     connect( ti, &GraphicContainer::requestSubTreeCreate,
-            this, &MainWindow::onCreateAbsBehaviorTree);
+            this, [this](const AbsBehaviorTree &tree, const QString &bt_name)
+    {
+      onCreateAbsBehaviorTree(tree, bt_name, false);
+    });
 
     connect( ti, &GraphicContainer::addNewModel,
             this, &MainWindow::onAddToModelRegistry);
@@ -1006,6 +1014,16 @@ QtNodes::Node* MainWindow::subTreeExpand(GraphicContainer &container,
     if( option == SUBTREE_EXPAND && subtree_model->expanded() == false)
     {
         auto subtree_container = getTabByName(subtree_name);
+
+        // Prevent expansion of invalid subtree
+        if( !subtree_container->containsValidTree() )
+        {
+            QMessageBox::warning(this, tr("Oops!"),
+                                 tr("Invalid SubTree. Can not expand SubTree."),
+                                 QMessageBox::Cancel);
+            return &node;
+        }
+
         auto abs_subtree = BuildTreeFromScene( subtree_container->scene() );
 
         subtree_model->setExpanded(true);
@@ -1093,7 +1111,9 @@ void MainWindow::clearUndoStacks()
     onPushUndo();
 }
 
-void MainWindow::onCreateAbsBehaviorTree(const AbsBehaviorTree &tree, const QString &bt_name)
+void MainWindow::onCreateAbsBehaviorTree(const AbsBehaviorTree &tree,
+                                         const QString &bt_name,
+                                         bool secondary_tabs)
 {
     auto container = getTabByName(bt_name);
     if( !container )
@@ -1104,15 +1124,16 @@ void MainWindow::onCreateAbsBehaviorTree(const AbsBehaviorTree &tree, const QStr
     container->loadSceneFromTree( tree );
     container->nodeReorder();
 
-    for(const auto& node: tree.nodes())
-    {
+    if( secondary_tabs ){
+      for(const auto& node: tree.nodes())
+      {
         if( node.model.type == NodeType::SUBTREE && getTabByName(node.model.registration_ID) == nullptr)
         {
-            createTab(node.model.registration_ID);
+          createTab(node.model.registration_ID);
         }
+      }
     }
 
-    // TODO_ clear or not?
     clearUndoStacks();
 
     refreshComboBoxSubtreesFilter();
@@ -1325,6 +1346,16 @@ void MainWindow::refreshExpandedSubtrees()
 
     for (auto subtree_node: subtree_nodes)
     {
+        // expanded subtrees may have become invalid
+        // collapse invalid subtrees before refreshing them
+        auto subtree_model = dynamic_cast<SubtreeNodeModel*>(subtree_node->nodeDataModel());
+        const QString& subtree_name = subtree_model->registrationName();
+        auto subtree_container = getTabByName(subtree_name);
+        if ( subtree_model->expanded() && !subtree_container->containsValidTree() )
+        {
+            subTreeExpand( *container, *subtree_node, SUBTREE_COLLAPSE );
+        }
+
         subTreeExpand( *container, *subtree_node, SUBTREE_REFRESH );
     }
 }
@@ -1436,10 +1467,35 @@ bool MainWindow::SavedState::operator ==(const MainWindow::SavedState &other) co
     return true;
 }
 
+void MainWindow::resetTreeStyle(AbsBehaviorTree &tree){
+    //printf("resetTreeStyle\n");
+    QtNodes::NodeStyle  node_style;
+    QtNodes::ConnectionStyle conn_style;
+
+    for(auto abs_node: tree.nodes()){
+        auto gui_node = abs_node.graphic_node;
+
+        gui_node->nodeDataModel()->setNodeStyle( node_style );
+        gui_node->nodeGraphicsObject().update();
+
+        const auto& conn_in = gui_node->nodeState().connections(PortType::In, 0 );
+        if(conn_in.size() == 1)
+        {
+            auto conn = conn_in.begin()->second;
+            conn->setStyle( conn_style );
+            conn->connectionGraphicsObject().update();
+        }
+    }
+}
+
 void MainWindow::onChangeNodesStatus(const QString& bt_name,
                                      const std::vector<std::pair<int, NodeStatus> > &node_status)
 {
     auto tree = BuildTreeFromScene( getTabByName(bt_name)->scene() );
+
+    std::vector<NodeStatus> vec_last_status(tree.nodesCount());
+
+    // printf("---\n");
 
     for (auto& it: node_status)
     {
@@ -1447,10 +1503,17 @@ void MainWindow::onChangeNodesStatus(const QString& bt_name,
         const NodeStatus status = it.second;
         auto& abs_node = tree.nodes().at(index);
 
+        // printf("%3d: %d, %s\n", index, (int)it.second, abs_node.instance_name.toStdString().c_str());
+
+        if(index == 1 && it.second == NodeStatus::RUNNING)
+            resetTreeStyle(tree);
+
         auto gui_node = abs_node.graphic_node;
-        auto style = getStyleFromStatus( status );
+        auto style = getStyleFromStatus( status, vec_last_status[index] );
         gui_node->nodeDataModel()->setNodeStyle( style.first );
         gui_node->nodeGraphicsObject().update();
+
+        vec_last_status[index] = status;
 
         const auto& conn_in = gui_node->nodeState().connections(PortType::In, 0 );
         if(conn_in.size() == 1)
@@ -1657,4 +1720,9 @@ void MainWindow::on_comboBoxSubtreesFilter_currentTextChanged(const QString &tex
             ui->tabWidget->setCurrentIndex(index);
         }
     }
+}
+// returns the current graphic mode
+GraphicMode MainWindow::getGraphicMode(void) const
+{
+    return _current_mode;
 }

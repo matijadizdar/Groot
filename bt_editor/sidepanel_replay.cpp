@@ -14,13 +14,15 @@
 #include <QMessageBox>
 
 #include "bt_editor_base.h"
+#include "mainwindow.h"
 #include "utils.h"
 
 
 SidepanelReplay::SidepanelReplay(QWidget *parent) :
     QFrame(parent),
     ui(new Ui::SidepanelReplay),
-    _prev_row(-1)
+    _prev_row(-1),
+    _parent(parent)
 {
     ui->setupUi(this);
 
@@ -177,7 +179,27 @@ void SidepanelReplay::loadLog(const QByteArray &content)
 {
     const char* buffer = reinterpret_cast<const char*>(content.data());
 
-    size_t bt_header_size = flatbuffers::ReadScalar<uint32_t>(buffer);
+    // how many bytes did we read off the disk (uoffset_t aka uint32_t)
+    const auto read_bytes = content.size();
+
+    // we need at least 4 bytes to read the bt_header_size
+    if( read_bytes < 4 ) {
+        QMessageBox::warning( this, "Log file is empty",
+                             "Failed to load this file.\n"
+                             "This Log file is empty");
+        return;
+    }
+    
+    // read the length of the header section from the file
+    const size_t bt_header_size = flatbuffers::ReadScalar<uint32_t>(buffer);
+
+    // if the length of the header goes past the end of the file, it is invalid
+    if( (bt_header_size == 0) || (bt_header_size > read_bytes) ) {
+        QMessageBox::warning( this, "Log file is corrupt",
+                             "Failed to load this file.\n"
+                             "This Log file corrupted or truncated");
+        return;
+    }
 
     flatbuffers::Verifier verifier( reinterpret_cast<const uint8_t*>(buffer+4),
                                    size_t(content.size() -4));
@@ -214,6 +236,10 @@ void SidepanelReplay::loadLog(const QByteArray &content)
     _transitions.clear();
     _transitions.reserve( (content.size() - 4 - bt_header_size) / 12 );
 
+    int idle_counter = _loaded_tree.nodes().size();
+    const int total_nodes = _loaded_tree.nodes().size();
+    int nearest_restart_transition_index = 0;
+
     for (size_t offset = 4+bt_header_size; offset < content.size(); offset += 12)
     {
         Transition transition;
@@ -225,6 +251,21 @@ void SidepanelReplay::loadLog(const QByteArray &content)
         transition.index = uid_to_index.at(uid);
         transition.prev_status = convert(flatbuffers::ReadScalar<Serialization::NodeStatus>(&buffer[offset+10] ));
         transition.status      = convert(flatbuffers::ReadScalar<Serialization::NodeStatus>(&buffer[offset+11] ));
+        transition.is_tree_restart = false;
+
+        if(transition.index == 1 &&
+                (transition.status == NodeStatus::RUNNING || transition.status == NodeStatus::IDLE) &&
+                idle_counter >= total_nodes - 1){
+            transition.is_tree_restart = true;
+            nearest_restart_transition_index = _transitions.size();
+        }
+
+        if(transition.prev_status != NodeStatus::IDLE && transition.status == NodeStatus::IDLE)
+            idle_counter++;
+        else if(transition.prev_status == NodeStatus::IDLE && transition.status != NodeStatus::IDLE)
+            idle_counter--;
+
+        transition.nearest_restart_transition_index = nearest_restart_transition_index;
 
         _transitions.push_back(transition);
     }
@@ -232,6 +273,11 @@ void SidepanelReplay::loadLog(const QByteArray &content)
     _timepoint.clear();
     _prev_row = -1;
     updateTableModel(_loaded_tree);
+
+
+    // We need to lock the nodes after they are loaded
+    auto main_win = dynamic_cast<MainWindow*>( _parent );
+    main_win->lockEditing(true);
 }
 
 
@@ -307,12 +353,10 @@ void SidepanelReplay::onRowChanged(int current_row)
         node_status.push_back( { index, NodeStatus::IDLE} );
     }
 
-    // THIS CAN BE OPTIMIZED, but it is so fast that I don't even care... for the time being.
-    for (int t = 0; t <= current_row; t++)
+    for (int t = _transitions[current_row].nearest_restart_transition_index; t <= current_row; t++)
     {
         auto& trans = _transitions[t];
-        node_status[ trans.index ].second = trans.status;
-        //qDebug() << trans.index << " : " << tr(toStr(trans.status));
+        node_status.push_back( { trans.index, trans.status} );
     }
 
     emit changeNodeStyle( bt_name, node_status );

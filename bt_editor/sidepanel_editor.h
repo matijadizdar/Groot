@@ -65,7 +65,7 @@ signals:
 
     void destroySubtree(QString ID);
 
-    void loadBehaviorTree(const AbsBehaviorTree& tree, const QString& name);
+    void loadBehaviorTree(const AbsBehaviorTree& tree, const QString& name, const bool secondary_tabs = true);
 
     void updatingSubtreesFinished();
 

@@ -1,4 +1,4 @@
 [submodule "depend/BehaviorTree.CPP"]
 	path = depend/BehaviorTree.CPP
 	url = https://github.com/robotics-upo/BehaviorTree.CPP/
-	branch = upo
+	branch = master

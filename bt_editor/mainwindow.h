@@ -58,6 +58,10 @@ public:
 
     const NodeModels &registeredModels() const;
 
+    void resetTreeStyle(AbsBehaviorTree &tree);
+
+    GraphicMode getGraphicMode(void) const;
+
 public slots:
 
     void onAutoArrange();
@@ -93,7 +97,9 @@ public slots:
 
     void on_toolButtonCenterView_pressed();
 
-    void onCreateAbsBehaviorTree(const AbsBehaviorTree &tree, const QString &bt_name);
+    void onCreateAbsBehaviorTree(const AbsBehaviorTree &tree,
+                                 const QString &bt_name,
+                                 bool secondary_tabs = true);
 
     void onChangeNodesStatus(const QString& bt_name, const std::vector<std::pair<int, NodeStatus>>& node_status);
 
@@ -133,11 +139,13 @@ private slots:
 
     void on_actionReportIssue_triggered();
 
+public:
+
+    void lockEditing(const bool locked);
+
 private:
 
     void updateCurrentMode();
-
-    void lockEditing(const bool locked);
 
     bool eventFilter(QObject *obj, QEvent *event) override;
 

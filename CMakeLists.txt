@@ -1,5 +1,11 @@
 cmake_minimum_required(VERSION 3.2)
 
+# Update the policy setting to avoid an error when loading the ament_cmake package
+# at the current cmake version level
+if(POLICY CMP0057)
+    cmake_policy(SET CMP0057 NEW)
+endif()
+
 project(groot)
 
 set(CMAKE_CXX_STANDARD 14)
@@ -8,8 +14,19 @@ find_package(Qt5 COMPONENTS  Core Widgets Gui OpenGL Xml Svg)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}  "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
 #############################################################
+find_package(ament_cmake QUIET)
+if(ament_cmake_FOUND)
+  find_package(behaviortree_cpp_v3 REQUIRED)
+
+  set(dependencies
+    behaviortree_cpp_v3
+  )
+
+  message(STATUS "------------------------------------------------")
+  message(STATUS "BehaviourTreeEditor is being built using AMENT.")
+  message(STATUS "------------------------------------------------")
+elseif( CATKIN_DEVEL_PREFIX OR CATKIN_BUILD_BINARY_PACKAGE)
 # http://answers.ros.org/question/230877/optionally-build-a-package-with-catkin/
-if( CATKIN_DEVEL_PREFIX OR CATKIN_BUILD_BINARY_PACKAGE)
    set(catkin_FOUND 1)
    add_definitions( -DUSING_ROS )
 endif()
@@ -30,7 +47,7 @@ if(catkin_FOUND)
     CATKIN_DEPENDS behavior_tree_core
     DEPENDS TinyXML2
     )
-endif(catkin_FOUND)
+endif()
 #############################################################
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -45,7 +62,11 @@ set(CMAKE_CXX_FLAGS "${Qt5Widgets_EXECUTABLE_COMPILE_FLAGS}")
 #set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
 #set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_STATIC_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
 
-INCLUDE_DIRECTORIES( ${catkin_INCLUDE_DIRS} ${TinyXML2_INCLUDE_DIRS} ./QtNodeEditor/include ./  )
+if(ament_cmake_FOUND)
+  INCLUDE_DIRECTORIES(include ./QtNodeEditor/include ./)
+else()
+  INCLUDE_DIRECTORIES( ${catkin_INCLUDE_DIRS} ${TinyXML2_INCLUDE_DIRS} ./QtNodeEditor/include ./  )
+endif()
 
 add_subdirectory( QtNodeEditor )
 
@@ -58,9 +79,9 @@ set(BUILD_TOOLS OFF CACHE BOOL "")
 set(BUILD_TESTING OFF CACHE BOOL "")
 set(CATKIN_ENABLE_TESTING OFF CACHE BOOL "")
 
-if(NOT catkin_FOUND)
+if(NOT catkin_FOUND AND NOT ament_cmake_FOUND)
     # look for BehaviorTree.CPP on the system
-    find_package(BehaviorTree)
+    find_package(BehaviorTreeV3)
     if (NOT BehaviorTree_FOUND)
         # use git submodule only if you are not compiling with catkin
         add_subdirectory( depend/BehaviorTree.CPP )
@@ -126,7 +147,7 @@ endif()
 
 QT5_WRAP_UI(FORMS_HEADERS ${FORMS_UI})
 
-add_library(behavior_tree_editor
+add_library(behavior_tree_editor SHARED
     ${APP_CPPS}
     ${FORMS_HEADERS}
 )
@@ -134,7 +155,9 @@ list(APPEND GROOT_TARGETS behavior_tree_editor)
 
 SET(GROOT_DEPENDENCIES QtNodeEditor )
 
-if( catkin_FOUND )
+if(ament_cmake_FOUND)
+    ament_target_dependencies(behavior_tree_editor ${dependencies})
+elseif( catkin_FOUND )
     SET(GROOT_DEPENDENCIES ${GROOT_DEPENDENCIES} ${catkin_LIBRARIES} ${TinyXML2_LIBRARIES})
 else()
     SET(GROOT_DEPENDENCIES ${GROOT_DEPENDENCIES} behavior_tree_core )
@@ -156,7 +179,11 @@ add_subdirectory(test)
 
 ######################################################
 # INSTALL
-if(catkin_FOUND)
+if(ament_cmake_FOUND)
+    set( GROOT_LIB_DESTINATION   lib )
+    set( GROOT_INC_DESTINATION   include )
+    set( GROOT_BIN_DESTINATION   lib/${PROJECT_NAME} )
+elseif(catkin_FOUND)
     set( GROOT_LIB_DESTINATION   ${CATKIN_PACKAGE_LIB_DESTINATION} )
     set( GROOT_INC_DESTINATION   ${CATKIN_PACKAGE_INCLUDE_DESTINATION} )
     set( GROOT_BIN_DESTINATION   ${CATKIN_PACKAGE_BIN_DESTINATION} )
@@ -181,3 +208,10 @@ INSTALL( FILES ${CMAKE_CURRENT_SOURCE_DIR}/groot_icon.png
          
 INSTALL( FILES ${CMAKE_CURRENT_SOURCE_DIR}/Groot.desktop
          DESTINATION ${GROOT_SHARE_DESTINATION}/applications)
+
+if(ament_cmake_FOUND)
+  ament_export_include_directories(include)
+  ament_export_dependencies(${GROOT_DEPENDENCIES} ${dependencies})
+  ament_export_libraries(behavior_tree_editor)
+  ament_package()
+endif()
