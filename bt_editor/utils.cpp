@@ -331,6 +331,10 @@ AbsBehaviorTree BuildTreeFromXML(const QDomElement& bt_root, const NodeModels& m
             modelID = xml_node.attribute("ID");
         }
 
+        // Backward compatibility with RetryUntilSuccessful node
+        // Change node ID to fix typo
+        if( modelID == "RetryUntilSuccesful" ) { modelID = "RetryUntilSuccessful"; }
+
         AbstractTreeNode tree_node;
 
         auto model_it = models.find(modelID);
@@ -356,7 +360,8 @@ AbsBehaviorTree BuildTreeFromXML(const QDomElement& bt_root, const NodeModels& m
             // Change old port to new ones keeping the same functionality
             if (modelID == "Parallel" && attribute.name() == "threshold")
             {
-                tree_node.ports_mapping.insert( { "failure_threshold", attribute.value() } );
+                QString child_count = QString::number(xml_node.childNodes().size());
+                tree_node.ports_mapping.insert( { "failure_threshold", child_count } );
                 tree_node.ports_mapping.insert( { "success_threshold", attribute.value() } );
                 continue;
             }
