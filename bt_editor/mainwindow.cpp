@@ -986,12 +986,25 @@ void MainWindow::onModelRemoveRequested(QString ID)
                                        QMessageBox::Cancel);
         }
         else{
-            ret = QMessageBox::warning(this,"Delete Subtree?",
-                                       QString("The Model of the Subtree [%1] will be removed. "
-                                               "An expanded version will be added to parent trees.\n"
-                                               "Are you sure? This action can't be undone.").arg(ID),
-                                       QMessageBox::Cancel | QMessageBox::Yes,
-                                       QMessageBox::Cancel);
+            auto subtree_container = getTabByName(ID);
+
+            if( !subtree_container->containsValidTree() )
+            {
+                QMessageBox::warning(this, "Can't remove this Subtree",
+                                     QString("You are trying to remove an invalid Subtree.\n"
+                                             "You can't delete this model unless you "
+                                             "remove all the instances of, or fix, [%1].").arg(ID),
+                                     QMessageBox::Ok );
+            }
+            else
+            {
+                ret = QMessageBox::warning(this,"Delete Subtree?",
+                                           QString("The Model of the Subtree [%1] will be removed. "
+                                                   "An expanded version will be added to parent trees.\n"
+                                                   "Are you sure? This action can't be undone.").arg(ID),
+                                           QMessageBox::Cancel | QMessageBox::Yes,
+                                           QMessageBox::Cancel);
+            }
         }
 
         if(ret == QMessageBox::Yes )
