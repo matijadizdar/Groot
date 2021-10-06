@@ -60,8 +60,8 @@ jobs:
         run: |
           apt-get update
           apt-get install -yq debhelper python3-bloom python3-rosdep python3-rosinstall python3-wstool build-essential fakeroot wget
-          wget -O - http://robotics.upo.es/repos/apt/conf/harurepo.gpg.key | apt-key add -
-          wget -P /etc/apt/sources.list.d/ http://robotics.upo.es/repos/apt/conf/harurepo.list
+          wget -O - http://robotics.upo.es/repos/focal_apt/debian/conf/harurepo.gpg.key | sudo apt-key add -
+          wget -P /etc/apt/sources.list.d/ http://robotics.upo.es/repos/focal_apt/debian/conf/harufocal.list
           apt-get update
         shell: bash
 
