@@ -118,14 +118,14 @@ MainWindow::MainWindow(GraphicMode initial_mode, QWidget *parent) :
     ui->splitter->setStretchFactor(0, 1);
     ui->splitter->setStretchFactor(1, 4);
 
-    QShortcut* undo_shortcut = new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_S), this);
-    connect( undo_shortcut, &QShortcut::activated, this, &MainWindow::on_actionSave_triggered );
+    QShortcut* save_shortcut = new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_S), this);
+    connect( save_shortcut, &QShortcut::activated, this, &MainWindow::on_actionSave_triggered );
 
-    // QShortcut* undo_shortcut = new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_Z), this);
-    // connect( undo_shortcut, &QShortcut::activated, this, &MainWindow::onUndoInvoked );
+    QShortcut* undo_shortcut = new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_Z), this);
+    connect( undo_shortcut, &QShortcut::activated, this, &MainWindow::onUndoInvoked );
 
-    // QShortcut* redo_shortcut = new QShortcut(QKeySequence(Qt::CTRL + Qt::SHIFT + Qt::Key_Z), this);
-    // connect( redo_shortcut, &QShortcut::activated, this, &MainWindow::onRedoInvoked );
+    QShortcut* redo_shortcut = new QShortcut(QKeySequence(Qt::CTRL + Qt::SHIFT + Qt::Key_Z), this);
+    connect( redo_shortcut, &QShortcut::activated, this, &MainWindow::onRedoInvoked );
 
     connect( _editor_widget, &SidepanelEditor::nodeModelEdited,
             this, &MainWindow::onTreeNodeEdited);

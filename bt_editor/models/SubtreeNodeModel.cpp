@@ -1,4 +1,5 @@
 #include "SubtreeNodeModel.hpp"
+#include "qcombobox.h"
 #include <QLineEdit>
 #include <QVBoxLayout>
 
@@ -49,9 +50,8 @@ void SubtreeNodeModel::setInstanceName(const QString &name)
 
 QJsonObject SubtreeNodeModel::save() const
 {
-    QJsonObject modelJson;
-    modelJson["name"]  = registrationName();
-    modelJson["alias"] = instanceName();
+
+    QJsonObject modelJson = BehaviorTreeDataModel::save();
     modelJson["expanded"] = _expanded;
 
     return modelJson;
@@ -66,4 +66,12 @@ void SubtreeNodeModel::restore(const QJsonObject &modelJson)
     QString alias = modelJson["alias"].toString();
     setInstanceName( alias );
     setExpanded( modelJson["expanded"].toBool() );
+
+    for(auto it = modelJson.begin(); it != modelJson.end(); it++ )
+    {
+        if( it.key() != "alias" && it.key() != "name" && it.key() != "expanded")
+        {
+            setPortMapping( it.key(), it.value().toString() );
+        }
+    }
 }
