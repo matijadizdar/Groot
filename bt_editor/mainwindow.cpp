@@ -121,12 +121,6 @@ MainWindow::MainWindow(GraphicMode initial_mode, QWidget *parent) :
     QShortcut* save_shortcut = new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_S), this);
     connect( save_shortcut, &QShortcut::activated, this, &MainWindow::on_actionSave_triggered );
 
-    QShortcut* undo_shortcut = new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_Z), this);
-    connect( undo_shortcut, &QShortcut::activated, this, &MainWindow::onUndoInvoked );
-
-    QShortcut* redo_shortcut = new QShortcut(QKeySequence(Qt::CTRL + Qt::SHIFT + Qt::Key_Z), this);
-    connect( redo_shortcut, &QShortcut::activated, this, &MainWindow::onRedoInvoked );
-
     connect( _editor_widget, &SidepanelEditor::nodeModelEdited,
             this, &MainWindow::onTreeNodeEdited);
 
@@ -1157,6 +1151,16 @@ void MainWindow::on_actionClear_triggered()
     onActionClearTriggered(true);
     clearTreeModels();
     clearUndoStacks();
+}
+
+void MainWindow::on_actionUndo_triggered()
+{
+    onUndoInvoked();
+}
+
+void MainWindow::on_actionRedo_triggered()
+{
+    onRedoInvoked();
 }
 
 void MainWindow::onTreeNodeEdited(QString prev_ID, QString new_ID)

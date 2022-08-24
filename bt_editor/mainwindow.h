@@ -113,6 +113,10 @@ public slots:
 
     void on_tabWidget_currentChanged(int index);
 
+    void on_actionUndo_triggered();
+
+    void on_actionRedo_triggered();
+
     void onActionClearTriggered(bool create_new);
 
     void on_actionClear_triggered();
