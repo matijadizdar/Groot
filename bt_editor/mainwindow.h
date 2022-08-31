@@ -79,6 +79,7 @@ public slots:
     void onRequestSubTreeExpand(GraphicContainer& container,
                                 QtNodes::Node& node);
 
+    void addToModelRegistryNoViewUpdate(const NodeModel &model);
     void onAddToModelRegistry(const NodeModel& model);
 
     void onDestroySubTree(const QString &ID);
@@ -96,6 +97,10 @@ public slots:
     void on_toolButtonReorder_pressed();
 
     void on_toolButtonCenterView_pressed();
+
+    void createAbsBehaviorTree(const AbsBehaviorTree &tree,
+                               const QString &bt_name,
+                               bool secondary_tabs = true);
 
     void onCreateAbsBehaviorTree(const AbsBehaviorTree &tree,
                                  const QString &bt_name,
@@ -155,6 +160,8 @@ private:
 
     void resizeEvent(QResizeEvent *) override;
 
+    GraphicContainer* createEmptyTab(const QString &name);
+
     GraphicContainer* createTab(const QString &name);
 
     void refreshNodesLayout(QtNodes::PortLayout new_layout);
@@ -187,6 +194,8 @@ private:
     std::shared_ptr<QtNodes::DataModelRegistry> _model_registry;
 
     std::map<QString, GraphicContainer*> _tab_info;
+
+    std::map<QString, AbsBehaviorTree> absBehaviorTreesMap;
 
     std::mutex _mutex;
 

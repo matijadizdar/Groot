@@ -39,6 +39,8 @@ public:
 
     void clearScene();
 
+    inline bool isTreeLoaded() const { return _tree_loaded; }
+
     AbsBehaviorTree loadedTree() const;
 
     void loadSceneFromTree(const AbsBehaviorTree &tree);
@@ -81,6 +83,7 @@ signals:
     void requestSubTreeCreate(AbsBehaviorTree tree, QString name);
 
 private:
+    bool _tree_loaded {false};
     EditorFlowScene* _scene;
     QtNodes::FlowView*  _view;
 

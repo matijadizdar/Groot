@@ -614,12 +614,67 @@ void GraphicContainer::onConnectionContextMenu(QtNodes::Connection &connection, 
 
     conn_menu->exec( QCursor::pos() );
 }
+int cnt = 0;
+//void GraphicContainer::recursiveLoadStep(QPointF& cursor,
+//                                         AbsBehaviorTree& tree,
+//                                         AbstractTreeNode* abs_node,
+//                                         Node* parent_node, int nest_level)
+//{
+//    std::vector<AbstractTreeNode *> stack;
+//    stack.push_back(abs_node);
+//    while (!stack.empty()) {
+//        ++cnt;
+//        AbstractTreeNode *abs_node = stack.back();
+//        stack.pop_back();
+//        Node& new_node = _scene->createNodeAtPos( abs_node->model.registration_ID,
+//                                                  abs_node->instance_name,
+//                                                  cursor);
+//        BehaviorTreeDataModel* bt_node = dynamic_cast<BehaviorTreeDataModel*>( new_node.nodeDataModel() );
 
+//        for (auto& port_it: abs_node->ports_mapping)
+//        {
+//            bt_node->setPortMapping( port_it.first, port_it.second );
+//        }
+//        bt_node->initWidget();
+
+//        new_node.nodeGeometry().recalculateSize();
+
+//        abs_node->pos = cursor;
+//        abs_node->size = _scene->getNodeSize( new_node );
+//        abs_node->graphic_node = &new_node;
+
+//        // Special case for node Subtree. Expand if necessary
+//        if( abs_node->model.type == NodeType::SUBTREE &&
+//                abs_node->children_index.size() == 1 )
+//        {
+//            if( auto subtree_node = dynamic_cast<SubtreeNodeModel*>( bt_node ) )
+//            {
+//                subtree_node->setExpanded(true);
+//                new_node.nodeState().getEntries(PortType::Out).resize(1);
+//                subtree_node->expandButton()->setHidden( true );
+//                emit subtree_node->updateNodeSize();
+//            }
+//        }
+
+//        _scene->createConnection( *abs_node->graphic_node, 0,
+//                                  *parent_node, 0 );
+
+//        for ( int index: abs_node->children_index)
+//        {
+//            cursor.setX( cursor.x() + abs_node->size.width() );
+//            cursor.setY( cursor.y() + abs_node->size.height() );
+//            AbstractTreeNode* child = tree.node(index);
+//            stack.push_back(child);
+//            //recursiveLoadStep(cursor, tree, child, abs_node->graphic_node, nest_level+1 );
+//        }
+//    }
+//}
 void GraphicContainer::recursiveLoadStep(QPointF& cursor,
                                          AbsBehaviorTree& tree,
                                          AbstractTreeNode* abs_node,
                                          Node* parent_node, int nest_level)
 {
+    ++cnt;
     Node& new_node = _scene->createNodeAtPos( abs_node->model.registration_ID,
                                               abs_node->instance_name,
                                               cursor);
@@ -665,6 +720,7 @@ void GraphicContainer::recursiveLoadStep(QPointF& cursor,
 
 void GraphicContainer::loadSceneFromTree(const AbsBehaviorTree &tree)
 {
+    _tree_loaded = true;
     AbsBehaviorTree abs_tree = tree;
     _scene->clearScene();
 
@@ -684,7 +740,15 @@ void GraphicContainer::loadSceneFromTree(const AbsBehaviorTree &tree)
         root_node = abs_tree.node(root_child_index);
     }
 
+    using std::chrono::high_resolution_clock;
+    using std::chrono::duration_cast;
+    using std::chrono::duration;
+    using std::chrono::milliseconds;
+
+    auto t1 = high_resolution_clock::now();
     recursiveLoadStep(cursor, abs_tree, root_node, &first_qt_node, 1 );
+    auto t2 = high_resolution_clock::now(); qDebug() << duration_cast<milliseconds>(t2-t1).count() << "ms";
+    qDebug() << "nodes:" << cnt;
     NodeReorder( *_scene, abs_tree );
 }
 

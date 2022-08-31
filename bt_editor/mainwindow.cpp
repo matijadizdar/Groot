@@ -204,7 +204,6 @@ MainWindow::MainWindow(GraphicMode initial_mode, QWidget *parent) :
     ui->tabWidget->tabBar()->setContextMenuPolicy(Qt::CustomContextMenu);
     connect( ui->tabWidget->tabBar(), &QTabBar::customContextMenuRequested,
             this, &MainWindow::onTabCustomContextMenuRequested);
-
     createTab("BehaviorTree");
     onTabSetMainTree(0);
     onSceneChanged();
@@ -234,8 +233,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
     QMainWindow::closeEvent(event);
 }
 
-
-GraphicContainer* MainWindow::createTab(const QString &name)
+GraphicContainer* MainWindow::createEmptyTab(const QString &name)
 {
     if( _tab_info.count(name) > 0)
     {
@@ -245,11 +243,7 @@ GraphicContainer* MainWindow::createTab(const QString &name)
     _tab_info.insert( {name, ti } );
 
     ti->scene()->setLayout( _current_layout );
-
-    ui->tabWidget->addTab( ti->view(), name );
-
-    ti->scene()->createNodeAtPos( "Root", "Root", QPointF(-30,-30) );
-    ti->zoomHomeView();
+    ui->tabWidget->addTab( ti->view() , name );
 
     //--------------------------------
 
@@ -270,6 +264,16 @@ GraphicContainer* MainWindow::createTab(const QString &name)
 
     connect( ti, &GraphicContainer::addNewModel,
             this, &MainWindow::onAddToModelRegistry);
+
+    return ti;
+}
+
+GraphicContainer* MainWindow::createTab(const QString &name)
+{
+    GraphicContainer *ti = createEmptyTab(name);
+
+    ti->scene()->createNodeAtPos( "Root", "Root", QPointF(-30,-30) );
+    ti->zoomHomeView();
 
     return ti;
 }
@@ -310,6 +314,14 @@ void MainWindow::loadFromPlugin(const QString& plugin_path)
 
 void MainWindow::loadFromXML(const QString& xml_text)
 {
+    using std::chrono::high_resolution_clock;
+    using std::chrono::duration_cast;
+    using std::chrono::duration;
+    using std::chrono::milliseconds;
+
+    auto t1 = high_resolution_clock::now();  
+    auto xx = QSignalBlocker(ui->tabWidget);
+
     QDomDocument document;
     try{
         QString errorMsg;
@@ -344,13 +356,11 @@ void MainWindow::loadFromXML(const QString& xml_text)
         messageBox.show();
         return;
     }
-
     //---------------
     bool error = false;
     QString err_message;
     auto saved_state = _current_state;
     auto prev_tree_model = _treenode_models;
-
     try {
         auto document_root = document.documentElement();
 
@@ -363,21 +373,22 @@ void MainWindow::loadFromXML(const QString& xml_text)
 
         for( const auto& model: custom_models)
         {
-            onAddToModelRegistry( model.second );
+            addToModelRegistryNoViewUpdate( model.second );
         }
-
         _editor_widget->updateTreeView();
 
         onActionClearTriggered(false);
-
+        qDebug() << duration_cast<milliseconds>(high_resolution_clock::now() - t1).count();
+        // 400ms
+        absBehaviorTreesMap.clear();
         const QSignalBlocker blocker( currentTabInfo() );
-
         for (auto bt_root = document_root.firstChildElement("BehaviorTree");
              !bt_root.isNull();
              bt_root = bt_root.nextSiblingElement("BehaviorTree"))
         {
             auto tree = BuildTreeFromXML( bt_root, _treenode_models );
             QString tree_name("BehaviorTree");
+
 
             if( bt_root.hasAttribute("ID") )
             {
@@ -387,8 +398,12 @@ void MainWindow::loadFromXML(const QString& xml_text)
                     _main_tree = tree_name;
                 }
             }
-            onCreateAbsBehaviorTree(tree, tree_name);
+            absBehaviorTreesMap[tree_name] = tree;
+
+            createAbsBehaviorTree(tree, tree_name);
         }
+        qDebug() << duration_cast<milliseconds>(high_resolution_clock::now() - t1).count();
+        // 600ms
 
         if( !_main_tree.isEmpty() )
         {
@@ -402,7 +417,14 @@ void MainWindow::loadFromXML(const QString& xml_text)
                     break;
                 }
             }
+            auto container = getTabByName(_main_tree);
+            const QSignalBlocker _blocker( container );
+            container->nodeReorder();
+            container->loadSceneFromTree(absBehaviorTreesMap[_main_tree]);
+            clearUndoStacks();
+            refreshComboBoxSubtreesFilter();
         }
+
 
         if( currentTabInfo() == nullptr)
         {
@@ -422,13 +444,14 @@ void MainWindow::loadFromXML(const QString& xml_text)
         }
 
         _editor_widget->updateTreeView();
+        qDebug() << duration_cast<milliseconds>(high_resolution_clock::now() - t1).count();
+        // 350ms
     }
     catch (std::exception& err)
     {
         error = true;
         err_message = err.what();
     }
-
     if( error )
     {
         _treenode_models = prev_tree_model;
@@ -445,6 +468,7 @@ void MainWindow::loadFromXML(const QString& xml_text)
 
         refreshComboBoxSubtreesFilter();
     }
+    qDebug() << duration_cast<milliseconds>(high_resolution_clock::now() - t1).count();
 }
 
 
@@ -843,10 +867,21 @@ void MainWindow::onRequestSubTreeExpand(GraphicContainer& container,
         subTreeExpand( container, node, SUBTREE_EXPAND );
     }
 }
-
-
-void MainWindow::onAddToModelRegistry(const NodeModel &model)
+/*void *aalloc(size_t size) {
+    static char *mem = (char *)malloc(256*1024*1024);
+    static size_t ptr = 0;
+    void *ret = (void *)(mem+ptr);
+    ptr += size;
+    if (ptr >= 32*1024*1024) {
+        qDebug() << "you did a fucky wucky";
+        exit(1);
+    }
+    return ret;
+}*/
+void MainWindow::addToModelRegistryNoViewUpdate(const NodeModel &model)
 {
+    // NOTE(mdizdar): updating the view is kind of slow.
+    // we don't want to be doing it repeatedly e.g. while loading from an xml
     namespace util = QtNodes::detail;
     const auto& ID = model.registration_ID;
 
@@ -854,8 +889,12 @@ void MainWindow::onAddToModelRegistry(const NodeModel &model)
     {
         if( model.type == NodeType::SUBTREE)
         {
+//            SubtreeNodeModel *p = (SubtreeNodeModel *)aalloc(sizeof(SubtreeNodeModel));
+//            return std::unique_ptr<SubtreeNodeModel>(p);
             return util::make_unique<SubtreeNodeModel>(model);
         }
+//        BehaviorTreeDataModel *p = (BehaviorTreeDataModel *)aalloc(sizeof(BehaviorTreeDataModel));
+//        return std::unique_ptr<BehaviorTreeDataModel>(p);
         return util::make_unique<BehaviorTreeDataModel>(model);
     };
 
@@ -867,7 +906,11 @@ void MainWindow::onAddToModelRegistry(const NodeModel &model)
         _treenode_models.insert( {ID, model } );
     else
         map_it->second = model; // update model if the ID exists already
+}
 
+void MainWindow::onAddToModelRegistry(const NodeModel &model)
+{
+    addToModelRegistryNoViewUpdate(model);
     _editor_widget->updateTreeView();
 }
 
@@ -1021,6 +1064,9 @@ QtNodes::Node* MainWindow::subTreeExpand(GraphicContainer &container,
     if( option == SUBTREE_EXPAND && subtree_model->expanded() == false)
     {
         auto subtree_container = getTabByName(subtree_name);
+        if (!subtree_container->isTreeLoaded()) {
+            subtree_container->loadSceneFromTree(absBehaviorTreesMap[subtree_name]);
+        }
 
         // Prevent expansion of invalid subtree
         if( !subtree_container->containsValidTree() )
@@ -1030,7 +1076,6 @@ QtNodes::Node* MainWindow::subTreeExpand(GraphicContainer &container,
                                  QMessageBox::Cancel);
             return &node;
         }
-
         auto abs_subtree = BuildTreeFromScene( subtree_container->scene() );
 
         subtree_model->setExpanded(true);
@@ -1118,31 +1163,32 @@ void MainWindow::clearUndoStacks()
     onPushUndo();
 }
 
-void MainWindow::onCreateAbsBehaviorTree(const AbsBehaviorTree &tree,
-                                         const QString &bt_name,
-                                         bool secondary_tabs)
+void MainWindow::createAbsBehaviorTree(const AbsBehaviorTree &tree,
+                                       const QString &bt_name,
+                                       bool secondary_tabs)
 {
     auto container = getTabByName(bt_name);
     if( !container )
     {
-        container = createTab(bt_name);
+        container = createEmptyTab(bt_name);
     }
-    const QSignalBlocker blocker( container );
-    container->loadSceneFromTree( tree );
-    container->nodeReorder();
-
     if( secondary_tabs ){
       for(const auto& node: tree.nodes())
       {
         if( node.model.type == NodeType::SUBTREE && getTabByName(node.model.registration_ID) == nullptr)
         {
-          createTab(node.model.registration_ID);
+          createEmptyTab(node.model.registration_ID);
         }
       }
     }
+}
 
+void MainWindow::onCreateAbsBehaviorTree(const AbsBehaviorTree &tree,
+                                         const QString &bt_name,
+                                         bool secondary_tabs)
+{
+    createAbsBehaviorTree(tree, bt_name, secondary_tabs);
     clearUndoStacks();
-
     refreshComboBoxSubtreesFilter();
 }
 
@@ -1453,6 +1499,9 @@ void MainWindow::on_tabWidget_currentChanged(int index)
     if( tab )
     {
         const QSignalBlocker blocker( tab );
+        if (absBehaviorTreesMap.find(tab_name) != absBehaviorTreesMap.end() && !tab->isTreeLoaded()) {
+            tab->loadSceneFromTree( absBehaviorTreesMap[tab_name]);
+        }
         tab->nodeReorder();
         _current_state.current_tab_name = ui->tabWidget->tabText( index );
         refreshExpandedSubtrees();
