@@ -31,7 +31,6 @@ NodeGraphicsObject(FlowScene &scene,
   , _double_clicked(false)
   , _proxyWidget(nullptr)
 {
-  auto xx = QSignalBlocker(*this);
   _scene.addItem(this);
 
   setFlag(QGraphicsItem::ItemDoesntPropagateOpacityToChildren, true);
@@ -85,28 +84,6 @@ node() const
 {
   return _node;
 }
-
-class foo: public QGraphicsProxyWidget {
-public:
-    foo(QGraphicsItem *arst=nullptr) : QGraphicsProxyWidget(arst) {}
-
-    void *operator new(size_t size) {
-        static char *mem = (char *)malloc(2048LL*1024*1024);
-        static char *lim = mem + 2048LL*1024*1024;
-        void *ret = (char *)mem;
-        mem += size;
-        //printf("ngo %ull\n", lim-mem);
-        if (mem > lim) {
-            qDebug() << "bruh";
-            exit(1);
-        }
-        return ret;
-    }
-
-    void operator delete(void *) {
-
-    }
-};
 
 void
 NodeGraphicsObject::

@@ -314,12 +314,6 @@ void MainWindow::loadFromPlugin(const QString& plugin_path)
 
 void MainWindow::loadFromXML(const QString& xml_text)
 {
-    using std::chrono::high_resolution_clock;
-    using std::chrono::duration_cast;
-    using std::chrono::duration;
-    using std::chrono::milliseconds;
-
-    auto t1 = high_resolution_clock::now();  
     auto xx = QSignalBlocker(ui->tabWidget);
 
     QDomDocument document;
@@ -378,8 +372,6 @@ void MainWindow::loadFromXML(const QString& xml_text)
         _editor_widget->updateTreeView();
 
         onActionClearTriggered(false);
-        qDebug() << duration_cast<milliseconds>(high_resolution_clock::now() - t1).count();
-        // 400ms
         absBehaviorTreesMap.clear();
         const QSignalBlocker blocker( currentTabInfo() );
         for (auto bt_root = document_root.firstChildElement("BehaviorTree");
@@ -402,8 +394,6 @@ void MainWindow::loadFromXML(const QString& xml_text)
 
             createAbsBehaviorTree(tree, tree_name);
         }
-        qDebug() << duration_cast<milliseconds>(high_resolution_clock::now() - t1).count();
-        // 600ms
 
         if( !_main_tree.isEmpty() )
         {
@@ -444,8 +434,6 @@ void MainWindow::loadFromXML(const QString& xml_text)
         }
 
         _editor_widget->updateTreeView();
-        qDebug() << duration_cast<milliseconds>(high_resolution_clock::now() - t1).count();
-        // 350ms
     }
     catch (std::exception& err)
     {
@@ -468,7 +456,6 @@ void MainWindow::loadFromXML(const QString& xml_text)
 
         refreshComboBoxSubtreesFilter();
     }
-    qDebug() << duration_cast<milliseconds>(high_resolution_clock::now() - t1).count();
 }
 
 
@@ -867,17 +854,7 @@ void MainWindow::onRequestSubTreeExpand(GraphicContainer& container,
         subTreeExpand( container, node, SUBTREE_EXPAND );
     }
 }
-/*void *aalloc(size_t size) {
-    static char *mem = (char *)malloc(256*1024*1024);
-    static size_t ptr = 0;
-    void *ret = (void *)(mem+ptr);
-    ptr += size;
-    if (ptr >= 32*1024*1024) {
-        qDebug() << "you did a fucky wucky";
-        exit(1);
-    }
-    return ret;
-}*/
+
 void MainWindow::addToModelRegistryNoViewUpdate(const NodeModel &model)
 {
     // NOTE(mdizdar): updating the view is kind of slow.
@@ -889,12 +866,8 @@ void MainWindow::addToModelRegistryNoViewUpdate(const NodeModel &model)
     {
         if( model.type == NodeType::SUBTREE)
         {
-//            SubtreeNodeModel *p = (SubtreeNodeModel *)aalloc(sizeof(SubtreeNodeModel));
-//            return std::unique_ptr<SubtreeNodeModel>(p);
             return util::make_unique<SubtreeNodeModel>(model);
         }
-//        BehaviorTreeDataModel *p = (BehaviorTreeDataModel *)aalloc(sizeof(BehaviorTreeDataModel));
-//        return std::unique_ptr<BehaviorTreeDataModel>(p);
         return util::make_unique<BehaviorTreeDataModel>(model);
     };
 
