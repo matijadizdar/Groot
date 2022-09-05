@@ -13,6 +13,11 @@
 
 NodeModels ReadTreeNodesModel(const QDomElement& root);
 
+void RecursivelyCreateXmlAbsTree(const AbsBehaviorTree &tree,
+                                 QDomDocument &doc,
+                                 QDomElement &parent_element,
+                                 const AbstractTreeNode *node);
+
 void RecursivelyCreateXml(const QtNodes::FlowScene &scene,
                           QDomDocument& doc,
                           QDomElement& parent_element,

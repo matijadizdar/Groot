@@ -25,7 +25,6 @@ const AbstractTreeNode *AbsBehaviorTree::rootNode() const
     return &_nodes.front();
 }
 
-
 std::vector<const AbstractTreeNode*> AbsBehaviorTree::findNodes(const QString &instance_name)
 {
     std::vector<const AbstractTreeNode*> out;

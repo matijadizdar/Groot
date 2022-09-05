@@ -131,7 +131,43 @@ NodeModels ReadTreeNodesModel(const QDomElement &root)
     return models;
 }
 
+void RecursivelyCreateXmlAbsTree(const AbsBehaviorTree &tree, QDomDocument &doc, QDomElement &parent_element, const AbstractTreeNode *node) {
+    const QString registration_name = node->model.registration_ID;
 
+    QDomElement element;
+
+    if( BuiltinNodeModels().count(registration_name) != 0)
+    {
+        element = doc.createElement( registration_name.toStdString().c_str() );
+    }
+    else
+    {
+        element = doc.createElement( QString::fromStdString(toStr(node->model.type)) );
+        element.setAttribute("ID", registration_name.toStdString().c_str() );
+    }
+
+    // etc.
+
+    if( node->instance_name != registration_name )
+    {
+        element.setAttribute("name", node->instance_name.toStdString().c_str());
+    }
+
+    auto port_mapping = node->ports_mapping;
+    for(const auto& port_it: port_mapping)
+    {
+        element.setAttribute( port_it.first, port_it.second );
+    }
+
+    parent_element.appendChild( element );
+
+    auto node_children_indices = node->children_index;
+    for(int child_index : node_children_indices)
+    {
+        auto child = tree.node(child_index);
+        RecursivelyCreateXmlAbsTree(tree, doc, element, child);
+    }
+}
 
 void RecursivelyCreateXml(const FlowScene &scene, QDomDocument &doc, QDomElement& parent_element, const Node *node)
 {

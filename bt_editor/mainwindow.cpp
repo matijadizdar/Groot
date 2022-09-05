@@ -517,8 +517,7 @@ QString MainWindow::saveToXML() const
     {
         auto& container = it.second;
         auto  scene = container->scene();
-
-        auto abs_tree = BuildTreeFromScene(container->scene());
+        AbsBehaviorTree abs_tree = container->isTreeLoaded() ? BuildTreeFromScene(container->scene()) : absBehaviorTreesMap.at(it.first);
         auto abs_root = abs_tree.rootNode();
         if( abs_root->children_index.size() == 1 &&
             abs_root->model.registration_ID == "Root"  )
@@ -535,7 +534,11 @@ QString MainWindow::saveToXML() const
         root_element.setAttribute("ID", it.first.toStdString().c_str());
         root.appendChild(root_element);
 
-        RecursivelyCreateXml(*scene, doc, root_element, root_node );
+        if (container->isTreeLoaded()) {
+            RecursivelyCreateXml(*scene, doc, root_element, root_node );
+        } else {
+            RecursivelyCreateXmlAbsTree(absBehaviorTreesMap.at(it.first), doc, root_element, abs_root);
+        }
     }
     root.appendChild( doc.createComment(COMMENT_SEPARATOR) );
 
@@ -576,9 +579,15 @@ QString MainWindow::saveToXML() const
 
 void MainWindow::on_actionSave_triggered()
 {
+
+    // NOTE(mdizdar): if it was never loaded it's the same as on disk, so it's fine and it
+    // doesn't need to be checked; if not, create it from its scene as is normal
     for (auto& it: _tab_info)
     {
         auto& container = it.second;
+        if (!container->isTreeLoaded()) {
+            continue;
+        }
         if( !container->containsValidTree() )
         {
             QMessageBox::warning(this, tr("Oops!"),

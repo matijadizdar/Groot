@@ -202,10 +202,8 @@ Node&
 FlowScene::
 createNode(std::unique_ptr<NodeDataModel> && dataModel)
 {
-  //auto t1 = std::chrono::high_resolution_clock::now();
   auto node = detail::make_unique<Node>(std::move(dataModel));
   auto ngo  = detail::make_unique<NodeGraphicsObject>(*this, *node);
-  //auto t2 = std::chrono::high_resolution_clock::now(); qDebug() << std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1).count() << "cn";
 
   node->setGraphicsObject(std::move(ngo));
 
