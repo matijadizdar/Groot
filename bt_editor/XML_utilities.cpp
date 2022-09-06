@@ -146,8 +146,6 @@ void RecursivelyCreateXmlAbsTree(const AbsBehaviorTree &tree, QDomDocument &doc,
         element.setAttribute("ID", registration_name.toStdString().c_str() );
     }
 
-    // etc.
-
     if( node->instance_name != registration_name )
     {
         element.setAttribute("name", node->instance_name.toStdString().c_str());
@@ -171,7 +169,6 @@ void RecursivelyCreateXmlAbsTree(const AbsBehaviorTree &tree, QDomDocument &doc,
 
 void RecursivelyCreateXml(const FlowScene &scene, QDomDocument &doc, QDomElement& parent_element, const Node *node)
 {
-
     const QtNodes::NodeDataModel* node_model = node->nodeDataModel();
     const std::string model_name = node_model->name().toStdString();
 

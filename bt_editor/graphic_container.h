@@ -39,7 +39,7 @@ public:
 
     void clearScene();
 
-    inline bool isTreeLoaded() const { return _tree_loaded; }
+    inline bool isTreeLoaded() const { return !_scene->nodes().empty(); }
 
     AbsBehaviorTree loadedTree() const;
 
@@ -83,7 +83,6 @@ signals:
     void requestSubTreeCreate(AbsBehaviorTree tree, QString name);
 
 private:
-    bool _tree_loaded {false};
     EditorFlowScene* _scene;
     QtNodes::FlowView*  _view;
 

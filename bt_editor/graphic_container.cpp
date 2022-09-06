@@ -664,7 +664,6 @@ void GraphicContainer::recursiveLoadStep(QPointF& cursor,
 
 void GraphicContainer::loadSceneFromTree(const AbsBehaviorTree &tree)
 {
-    _tree_loaded = true;
     AbsBehaviorTree abs_tree = tree;
     auto xx = QSignalBlocker(_scene);
     _scene->clearScene();
