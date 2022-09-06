@@ -372,7 +372,6 @@ void MainWindow::loadFromXML(const QString& xml_text)
         _editor_widget->updateTreeView();
 
         onActionClearTriggered(false);
-        absBehaviorTreesMap.clear();
         const QSignalBlocker blocker( currentTabInfo() );
         for (auto bt_root = document_root.firstChildElement("BehaviorTree");
              !bt_root.isNull();
@@ -1243,6 +1242,7 @@ void MainWindow::onTreeNodeEdited(QString prev_ID, QString new_ID)
 
 void MainWindow::onActionClearTriggered(bool create_new)
 {
+    absBehaviorTreesMap.clear();
     for (auto& it: _tab_info)
     {
         it.second->clearScene();
@@ -1255,7 +1255,6 @@ void MainWindow::onActionClearTriggered(bool create_new)
     {
         createTab("BehaviorTree");
     }
-
     _editor_widget->clear();
     _replay_widget->clear();
 #ifdef ZMQ_FOUND

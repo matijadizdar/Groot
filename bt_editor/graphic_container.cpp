@@ -66,7 +66,6 @@ GraphicContainer::GraphicContainer(std::shared_ptr<DataModelRegistry> model_regi
             undoableChange();
         }
     });
-
 }
 
 void GraphicContainer::lockEditing(bool locked)
@@ -227,7 +226,6 @@ bool GraphicContainer::containsValidTree() const
 
 void GraphicContainer::clearScene()
 {
-    const QSignalBlocker blocker( this );
     _scene->clearScene();
 }
 
