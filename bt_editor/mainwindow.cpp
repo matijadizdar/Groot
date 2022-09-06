@@ -118,9 +118,6 @@ MainWindow::MainWindow(GraphicMode initial_mode, QWidget *parent) :
     ui->splitter->setStretchFactor(0, 1);
     ui->splitter->setStretchFactor(1, 4);
 
-    QShortcut* save_shortcut = new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_S), this);
-    connect( save_shortcut, &QShortcut::activated, this, &MainWindow::on_actionSave_triggered );
-
     connect( _editor_widget, &SidepanelEditor::nodeModelEdited,
             this, &MainWindow::onTreeNodeEdited);
 
@@ -481,6 +478,8 @@ void MainWindow::on_actionLoad_triggered()
     settings.setValue("MainWindow.lastLoadDirectory", directory_path);
     settings.sync();
 
+    _filename = fileName;
+
     if(QFileInfo(fileName).suffix() == "xml")
     {
         QString xml_text;
@@ -576,9 +575,8 @@ QString MainWindow::saveToXML() const
     return xmlDocumentToString(doc);
 }
 
-void MainWindow::on_actionSave_triggered()
+void MainWindow::on_actionSave_triggered(bool saveas)
 {
-
     // NOTE(mdizdar): if it was never loaded it's the same as on disk, so it's fine and it
     // doesn't need to be checked; if not, create it from its scene as is normal
     for (auto& it: _tab_info)
@@ -604,26 +602,29 @@ void MainWindow::on_actionSave_triggered()
     QSettings settings;
     QString directory_path  = settings.value("MainWindow.lastSaveDirectory",
                                             QDir::currentPath() ).toString();
+    if (_filename.isEmpty() || saveas) {
 
-    auto fileName = QFileDialog::getSaveFileName(this, "Save BehaviorTree to file",
-                                                 directory_path, "BehaviorTree files (*.xml)");
-    if (fileName.isEmpty()){
-        return;
-    }
-    if (!fileName.endsWith(".xml"))
-    {
-        fileName += ".xml";
+        auto filename = QFileDialog::getSaveFileName(this, "Save BehaviorTree to file",
+                                                     directory_path, "BehaviorTree files (*.xml)");
+        if (filename .isEmpty()){
+            return;
+        }
+        if (!filename .endsWith(".xml"))
+        {
+            filename  += ".xml";
+        }
+        _filename = filename;
     }
 
     QString xml_text = saveToXML();
 
-    QFile file(fileName);
+    QFile file(_filename);
     if (file.open(QIODevice::WriteOnly)) {
         QTextStream stream(&file);
         stream << xml_text << endl;
     }
 
-    directory_path = QFileInfo(fileName).absolutePath();
+    directory_path = QFileInfo(_filename).absolutePath();
     settings.setValue("MainWindow.lastSaveDirectory", directory_path);
 }
 
@@ -1178,6 +1179,22 @@ void MainWindow::on_actionClear_triggered()
     onActionClearTriggered(true);
     clearTreeModels();
     clearUndoStacks();
+}
+
+
+void MainWindow::on_actionSave_Tree_As_triggered()
+{
+    on_actionSave_triggered(true);
+}
+
+void MainWindow::on_actionSave_Tree_triggered()
+{
+    on_actionSave_triggered(false);
+}
+
+void MainWindow::on_actionLoad_Tree_triggered()
+{
+    on_actionLoad_triggered();
 }
 
 void MainWindow::on_actionUndo_triggered()

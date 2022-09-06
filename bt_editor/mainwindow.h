@@ -90,7 +90,7 @@ public slots:
 
     void on_actionLoad_triggered();
 
-    void on_actionSave_triggered();
+    void on_actionSave_triggered(bool saveas = false);
 
     void on_splitter_splitterMoved(int pos = 0, int index = 0);
 
@@ -125,6 +125,12 @@ public slots:
     void onActionClearTriggered(bool create_new);
 
     void on_actionClear_triggered();
+
+    void on_actionSave_Tree_As_triggered();
+
+    void on_actionSave_Tree_triggered();
+
+    void on_actionLoad_Tree_triggered();
 
     void onTreeNodeEdited(QString prev_ID, QString new_ID);
 
@@ -205,6 +211,8 @@ private:
     QtNodes::PortLayout _current_layout;
 
     NodeModels _treenode_models;
+
+    QString _filename;
 
     QString _main_tree;
 
