@@ -178,11 +178,9 @@ private:
 
     struct SavedState
     {
-        QString main_tree;
-        QString current_tab_name;
         QTransform view_transform;
         QRectF view_area;
-        std::map<QString, QByteArray> json_states;
+        QByteArray json_state;
         bool operator ==( const SavedState& other) const;
         bool operator !=( const SavedState& other) const { return !( *this == other); }
     };
@@ -205,9 +203,9 @@ private:
 
     std::mutex _mutex;
 
-    std::deque<SavedState> _undo_stack;
-    std::deque<SavedState> _redo_stack;
-    SavedState _current_state;
+    std::map<QString, std::deque<SavedState>> _undo_stack;
+    std::map<QString, std::deque<SavedState>> _redo_stack;
+    std::map<QString, SavedState> _current_state;
     QtNodes::PortLayout _current_layout;
 
     NodeModels _treenode_models;
@@ -222,7 +220,7 @@ private:
     SidepanelMonitor* _monitor_widget;
 #endif
     
-    MainWindow::SavedState saveCurrentState();
+    MainWindow::SavedState saveCurrentState(GraphicContainer *tab=nullptr);
     void clearUndoStacks();
 };
 

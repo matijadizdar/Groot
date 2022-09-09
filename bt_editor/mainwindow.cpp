@@ -58,6 +58,7 @@ MainWindow::MainWindow(GraphicMode initial_mode, QWidget *parent) :
     else{
         _current_layout = QtNodes::PortLayout::Vertical;
     }
+    qDebug() << layout;
 
     _model_registry = std::make_shared<QtNodes::DataModelRegistry>();
 
@@ -202,9 +203,17 @@ MainWindow::MainWindow(GraphicMode initial_mode, QWidget *parent) :
     connect( ui->tabWidget->tabBar(), &QTabBar::customContextMenuRequested,
             this, &MainWindow::onTabCustomContextMenuRequested);
     createTab("BehaviorTree");
+    _undo_stack["BehaviorTree"].clear();
+    _redo_stack["BehaviorTree"].clear();
+    onPushUndo();
     onTabSetMainTree(0);
     onSceneChanged();
-    _current_state = saveCurrentState();
+    auto current_tab_index = ui->tabWidget->currentIndex();
+    auto current_tab_name = ui->tabWidget->tabText(current_tab_index);
+    for (const auto &it: _tab_info)
+    {
+        _current_state[it.first] = saveCurrentState(it.second);
+    }
 
     refreshComboBoxSubtreesFilter();
 }
@@ -351,7 +360,10 @@ void MainWindow::loadFromXML(const QString& xml_text)
     bool error = false;
     QString err_message;
     auto saved_state = _current_state;
+    auto current_tab_index = ui->tabWidget->currentIndex();
+    auto current_tab_name = ui->tabWidget->tabText(current_tab_index);
     auto prev_tree_model = _treenode_models;
+    auto prev_main_tree = _main_tree;
     try {
         auto document_root = document.documentElement();
 
@@ -424,7 +436,7 @@ void MainWindow::loadFromXML(const QString& xml_text)
 
         auto models_to_remove = GetModelsToRemove(this, _treenode_models, custom_models);
 
-        for( QString model_name: models_to_remove )
+        for( QString &model_name: models_to_remove )
         {
             onModelRemoveRequested(model_name);
         }
@@ -439,7 +451,45 @@ void MainWindow::loadFromXML(const QString& xml_text)
     if( error )
     {
         _treenode_models = prev_tree_model;
-        loadSavedStateFromJson( saved_state );
+        _main_tree = prev_main_tree;
+        for (auto& it: _tab_info)
+        {
+            it.second->clearScene();
+            it.second->deleteLater();
+        }
+        _tab_info.clear();
+        ui->tabWidget->clear();
+        for(const auto& it: saved_state)
+        {
+            QString tab_name = it.first;
+            _tab_info.insert( {tab_name, createTab(tab_name)} );
+        }
+        for(const auto& it: saved_state)
+        {
+            auto state = it.second;
+            QString name = it.first;
+            auto container = getTabByName(name);
+            container->loadFromJson( state.json_state );
+            container->view()->setTransform( state.view_transform );
+            container->view()->setSceneRect( state.view_area );
+        }
+        for (int i=0; i< ui->tabWidget->count(); i++)
+        {
+            if( ui->tabWidget->tabText( i ) == current_tab_name)
+            {
+                ui->tabWidget->setCurrentIndex(i);
+                ui->tabWidget->widget(i)->setFocus();
+            }
+            if( ui->tabWidget->tabText(i) == _main_tree)
+            {
+                onTabSetMainTree(i);
+            }
+        }
+        if( ui->tabWidget->count() == 1 )
+        {
+            onTabSetMainTree(0);
+        }
+        onSceneChanged();
         qDebug() << "R: Undo size: " << _undo_stack.size() << " Redo size: " << _redo_stack.size();
         QMessageBox::warning(this, tr("Exception!"),
                              tr("It was not possible to parse the file. Error:\n\n%1"). arg( err_message ),
@@ -718,50 +768,57 @@ void MainWindow::on_splitter_splitterMoved(int , int )
     }
 }
 
-MainWindow::SavedState MainWindow::saveCurrentState()
+MainWindow::SavedState MainWindow::saveCurrentState(GraphicContainer *tab)
 {
     SavedState saved;
-    int index = ui->tabWidget->currentIndex();
-    saved.main_tree = _main_tree;
-    saved.current_tab_name = ui->tabWidget->tabText(index);
-    auto current_view = getTabByName( saved.current_tab_name )->view();
-    saved.view_transform = current_view->transform();
-    saved.view_area = current_view->sceneRect();
 
-    for (auto& it: _tab_info)
+    if (tab == nullptr)
     {
-        saved.json_states[it.first] = it.second->scene()->saveToMemory();
+        int index = ui->tabWidget->currentIndex();
+        auto current_tab_name = ui->tabWidget->tabText(index);
+        tab = getTabByName(current_tab_name);
     }
+    auto view = tab->view();
+    saved.view_transform = view->transform();
+    saved.view_area = view->sceneRect();
+
+    saved.json_state = tab->scene()->saveToMemory();
+
     return saved;
 }
 
 void MainWindow::onPushUndo()
 {
+    qDebug() << "push";
     SavedState saved = saveCurrentState();
 
-    if( _undo_stack.empty() || ( saved != _current_state &&  _undo_stack.back() != _current_state) )
-    {
-        _undo_stack.push_back( std::move(_current_state) );
-        _redo_stack.clear();
-    }
-    _current_state = saved;
+    auto current_tab_index = ui->tabWidget->currentIndex();
+    auto current_tab_name = ui->tabWidget->tabText(current_tab_index);
 
-    //qDebug() << "P: Undo size: " << _undo_stack.size() << " Redo size: " << _redo_stack.size();
+    if( _undo_stack[current_tab_name].empty() ||
+      ( saved != _current_state[current_tab_name] &&  _undo_stack[current_tab_name].back() != _current_state[current_tab_name]) )
+    {
+        _undo_stack[current_tab_name].push_back( std::move(_current_state[current_tab_name]) );
+        _redo_stack[current_tab_name].clear();
+    }
+
+    _current_state[current_tab_name] = saved;
 }
 
 void MainWindow::onUndoInvoked()
 {
     if ( _current_mode != GraphicMode::EDITOR ) return; //locked
 
-    if( _undo_stack.size() > 0)
+    auto current_tab_index = ui->tabWidget->currentIndex();
+    auto current_tab_name = ui->tabWidget->tabText(current_tab_index);
+    qDebug() << "undo called" << current_tab_name << _redo_stack[current_tab_name].size() << _undo_stack[current_tab_name].size();
+    if( _undo_stack[current_tab_name].size() > 0)
     {
-        _redo_stack.push_back( std::move(_current_state) );
-        _current_state = _undo_stack.back();
-        _undo_stack.pop_back();
+        _redo_stack[current_tab_name].push_back( std::move(_current_state[current_tab_name]) );
+        _current_state[current_tab_name] = _undo_stack[current_tab_name].back();
+        _undo_stack[current_tab_name].pop_back();
 
-        loadSavedStateFromJson(_current_state);
-
-        // qDebug() << "U: Undo size: " << _undo_stack.size() << " Redo size: " << _redo_stack.size();
+        loadSavedStateFromJson(_current_state[current_tab_name]);
     }
 }
 
@@ -769,61 +826,51 @@ void MainWindow::onRedoInvoked()
 {
     if ( _current_mode != GraphicMode::EDITOR ) return; //locked
 
-    if( _redo_stack.size() > 0)
+    auto current_tab_index = ui->tabWidget->currentIndex();
+    auto current_tab_name = ui->tabWidget->tabText(current_tab_index);
+    qDebug() << "redo called" << current_tab_name << _redo_stack[current_tab_name].size() << _undo_stack[current_tab_name].size();
+    if( _redo_stack[current_tab_name].size() > 0)
     {
-        _undo_stack.push_back( _current_state );
-        _current_state = std::move( _redo_stack.back() );
-        _redo_stack.pop_back();
+        _undo_stack[current_tab_name].push_back( _current_state[current_tab_name] );
+        _current_state[current_tab_name] = std::move( _redo_stack[current_tab_name].back() );
+        _redo_stack[current_tab_name].pop_back();
 
-        loadSavedStateFromJson(_current_state);
-
-        // qDebug() << "R: Undo size: " << _undo_stack.size() << " Redo size: " << _redo_stack.size();
+        loadSavedStateFromJson(_current_state[current_tab_name]);
     }
 }
 
+#include <QJsonDocument>
+
 void MainWindow::loadSavedStateFromJson(SavedState saved_state)
 {
-    // TODO crash if the name of the container (tab) changed
-    for (auto& it: _tab_info)
-    {
-        it.second->clearScene();
-        it.second->deleteLater();
-    }
-    _tab_info.clear();
-    ui->tabWidget->clear();
+    qDebug() << QJsonDocument::fromJson(saved_state.json_state).toJson(QJsonDocument::Indented).toStdString().c_str();
+    auto current_tab_index = ui->tabWidget->currentIndex();
+    auto current_tab_name = ui->tabWidget->tabText(current_tab_index);
+    auto container = getTabByName(current_tab_name);
 
-    _main_tree = saved_state.main_tree;
+    container->blockSignals(true);
+    container->scene()->blockSignals(true);
 
-    for(const auto& it: saved_state.json_states)
-    {
-        QString tab_name = it.first;
-        _tab_info.insert( {tab_name, createTab(tab_name)} );
-    }
-    for(const auto& it: saved_state.json_states)
-    {
-        QString name = it.first;
-        auto container = getTabByName(name);
-        container->loadFromJson( it.second );
-        container->view()->setTransform( saved_state.view_transform );
-        container->view()->setSceneRect( saved_state.view_area );
+    container->clearScene();
+    container->deleteLater();
+    _tab_info.erase(current_tab_name);
+    ui->tabWidget->removeTab(current_tab_index);
+
+    container = createEmptyTab(current_tab_name);
+
+    ui->tabWidget->tabBar()->moveTab(_tab_info.size()-1, current_tab_index);
+
+    container->loadFromJson(saved_state.json_state);
+    container->view()->setTransform(saved_state.view_transform);
+    container->view()->setSceneRect(saved_state.view_area);
+
+    ui->tabWidget->setCurrentIndex(current_tab_index);
+    ui->tabWidget->widget(current_tab_index)->setFocus();
+
+    if (current_tab_name == _main_tree || _tab_info.size() == 1) {
+        onTabSetMainTree(current_tab_index);
     }
 
-    for (int i=0; i< ui->tabWidget->count(); i++)
-    {
-        if( ui->tabWidget->tabText( i ) == saved_state.current_tab_name)
-        {
-            ui->tabWidget->setCurrentIndex(i);
-            ui->tabWidget->widget(i)->setFocus();
-        }
-        if( ui->tabWidget->tabText(i) == _main_tree)
-        {
-            onTabSetMainTree(i);
-        }
-    }
-    if( ui->tabWidget->count() == 1 )
-    {
-        onTabSetMainTree(0);
-    }
     onSceneChanged();
 }
 
@@ -1048,6 +1095,9 @@ QtNodes::Node* MainWindow::subTreeExpand(GraphicContainer &container,
         auto subtree_container = getTabByName(subtree_name);
         if (!subtree_container->isTreeLoaded()) {
             subtree_container->loadSceneFromTree(absBehaviorTreesMap[subtree_name]);
+            _undo_stack[subtree_name].clear();
+            _redo_stack[subtree_name].clear();
+            onPushUndo();
         }
 
         // Prevent expansion of invalid subtree
@@ -1496,12 +1546,15 @@ void MainWindow::on_tabWidget_currentChanged(int index)
     auto tab = getTabByName(tab_name);
     if( tab )
     {
-        const QSignalBlocker blocker( tab );
         if (absBehaviorTreesMap.find(tab_name) != absBehaviorTreesMap.end() && !tab->isTreeLoaded()) {
             tab->loadSceneFromTree( absBehaviorTreesMap[tab_name]);
+            _undo_stack[tab_name].clear();
+            _redo_stack[tab_name].clear();
+            onPushUndo();
         }
+        const QSignalBlocker blocker( tab );
         tab->nodeReorder();
-        _current_state.current_tab_name = ui->tabWidget->tabText( index );
+
         refreshExpandedSubtrees();
         tab->zoomHomeView();
     }
@@ -1509,20 +1562,11 @@ void MainWindow::on_tabWidget_currentChanged(int index)
 
 bool MainWindow::SavedState::operator ==(const MainWindow::SavedState &other) const
 {
-    if( current_tab_name != other.current_tab_name ||
-        json_states.size() != other.json_states.size())
+    if (json_state != other.json_state)
     {
         return false;
     }
-    for(auto& it: json_states  )
-    {
-        auto other_it = other.json_states.find(it.first);
-        if( other_it == other.json_states.end() ||
-            it.second != other_it->second)
-        {
-            return false;
-        }
-    }
+
     if( view_area != other.view_area ||
         view_transform != other.view_transform)
     {
