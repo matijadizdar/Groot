@@ -58,7 +58,6 @@ MainWindow::MainWindow(GraphicMode initial_mode, QWidget *parent) :
     else{
         _current_layout = QtNodes::PortLayout::Vertical;
     }
-    qDebug() << layout;
 
     _model_registry = std::make_shared<QtNodes::DataModelRegistry>();
 
@@ -789,7 +788,6 @@ MainWindow::SavedState MainWindow::saveCurrentState(GraphicContainer *tab)
 
 void MainWindow::onPushUndo()
 {
-    qDebug() << "push";
     SavedState saved = saveCurrentState();
 
     auto current_tab_index = ui->tabWidget->currentIndex();
@@ -811,7 +809,6 @@ void MainWindow::onUndoInvoked()
 
     auto current_tab_index = ui->tabWidget->currentIndex();
     auto current_tab_name = ui->tabWidget->tabText(current_tab_index);
-    qDebug() << "undo called" << current_tab_name << _redo_stack[current_tab_name].size() << _undo_stack[current_tab_name].size();
     if( _undo_stack[current_tab_name].size() > 0)
     {
         _redo_stack[current_tab_name].push_back( std::move(_current_state[current_tab_name]) );
@@ -828,7 +825,6 @@ void MainWindow::onRedoInvoked()
 
     auto current_tab_index = ui->tabWidget->currentIndex();
     auto current_tab_name = ui->tabWidget->tabText(current_tab_index);
-    qDebug() << "redo called" << current_tab_name << _redo_stack[current_tab_name].size() << _undo_stack[current_tab_name].size();
     if( _redo_stack[current_tab_name].size() > 0)
     {
         _undo_stack[current_tab_name].push_back( _current_state[current_tab_name] );
@@ -843,7 +839,6 @@ void MainWindow::onRedoInvoked()
 
 void MainWindow::loadSavedStateFromJson(SavedState saved_state)
 {
-    qDebug() << QJsonDocument::fromJson(saved_state.json_state).toJson(QJsonDocument::Indented).toStdString().c_str();
     auto current_tab_index = ui->tabWidget->currentIndex();
     auto current_tab_name = ui->tabWidget->tabText(current_tab_index);
     auto container = getTabByName(current_tab_name);
